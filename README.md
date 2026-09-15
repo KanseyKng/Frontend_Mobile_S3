@@ -1,17 +1,16 @@
-# tugas_pertama
+Tugas #4 Mobile Developer - Navigasi Flutter
 
-A new Flutter project.
+Deskripsi Aplikasi:
+Aplikasi ini dibuat sesuai dengan tuga #4 untuk memperlihatkan fitur navigasi antar screnn
 
-## Getting Started
+Fitur:
+- Screen Beranda (StatelessWidget) dengan ListView berisi 3 Card.
+- Screen Detail (StatefulWidget) dengan layout Column, Container pastel, dan state interaktif.
 
-This project is a starting point for a Flutter application.
+Cara Setup Project:
+1. Pastikan Flutter SDK sudah terinstall di komputermu.
+2. Clone repository ini:(https://github.com/KanseyKng/tugas_pertama.git)
+3. Masuk ke folder project: `cd tugas_pertama`
+4. Jalankan perintah: `flutter pub get`
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Cara Menjalankan Aplikasi (Server Lokal): jalankan "flutter run" di terminal (sesuai tempat folder project)
