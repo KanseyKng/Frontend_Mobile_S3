@@ -4,24 +4,26 @@ import 'package:flutter/material.dart';
 // Import widget kartu dari folder widgets
 import 'widgets/pricing_card.dart';
 
-// Import UserModel dari folder yang sama (lib/)
+// Import UserModel langsung dari folder lib (sesuai folder tree)
 import 'user_model.dart';
 
 void main() {
-  // === Simulasi JSON dari API (log UserModel tetap dipertahankan) ===
+  // Simulasi JSON dari API (sesuai kode yang kamu berikan)
   Map jsonResponse = {
     'name': 'Budi Santoso',
     'age': 22,
+    // 'id', 'email', dan 'isActive' tidak dikirim oleh server
   };
 
+  // Konversi JSON ke Objek (Aplikasi tidak akan crash berkat Null Safety)
   UserModel user = UserModel.fromJson(jsonResponse);
 
   print('=== DATA USER ===');
-  print('Nama: ${user.name}');
-  print('ID: ${user.id}');
-  print('Email: ${user.email}');
-  print('Umur: ${user.age}');
-  print('Status: ${user.isActive}');
+  print('Nama: ${user.name}');          // Output: Budi Santoso
+  print('ID: ${user.id}');              // Output: (string kosong)
+  print('Email: ${user.email}');        // Output: null
+  print('Umur: ${user.age}');           // Output: 22
+  print('Status: ${user.isActive}');    // Output: false
   print('To JSON: ${user.toJson()}');
   print('=================');
 
@@ -36,146 +38,77 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ikobana Frozen Food',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-      ),
+      theme: ThemeData(primarySwatch: Colors.green),
       home: const BerandaScreen(),
     );
   }
 }
 
 // ============================================================
-// SCREEN 1: BERANDA / KATALOG
-// WAJIB: StatelessWidget + ListView + 3 Cards + ListTile clickable
+// SCREEN 1: BERANDA / KATALOG (StatelessWidget)
 // ============================================================
 class BerandaScreen extends StatelessWidget {
   const BerandaScreen({super.key});
 
-  // Data 3 produk
-  List<Map<String, dynamic>> get _produkList => [
-        {
-          'id': 'P001',
-          'nama': 'Nugget Ayam Premium',
-          'harga': 'Rp 35.000',
-          'kategori': 'Olahan Ayam',
-          'deskripsi':
-              'Nugget ayam premium dari daging ayam pilihan tanpa pengawet. Cocok untuk lauk praktis keluarga. Sudah tersertifikasi halal dan BPOM.',
-          'expired': '12 bulan (freezer -18°C)',
-          'berat': '500 gram',
-          'isPromo': true,
-        },
-        {
-          'id': 'P002',
-          'nama': 'Sosis Sapi Jumbo',
-          'harga': 'Rp 42.000',
-          'kategori': 'Olahan Sapi',
-          'deskripsi':
-              'Sosis sapi jumbo dengan tekstur kenyal dan rasa gurih. Ideal untuk sarapan, bekal anak, atau BBQ keluarga. Isi 10 pcs per pack.',
-          'expired': '9 bulan (freezer -18°C)',
-          'berat': '600 gram',
-          'isPromo': false,
-        },
-        {
-          'id': 'P003',
-          'nama': 'Dimsum Mentai Premium',
-          'harga': 'Rp 28.000',
-          'kategori': 'Dimsum',
-          'deskripsi':
-              'Dimsum mentai premium dengan saus mentai creamy. Tinggal kukus 10 menit, siap disajikan. Isi 8 pcs per box.',
-          'expired': '6 bulan (freezer -18°C)',
-          'berat': '320 gram',
-          'isPromo': true,
-        },
-      ];
+  // Data katalog produk (3 card)
+  final List<Map<String, String>> produkList = const [
+    {
+      'nama': 'Nugget Ayam Premium',
+      'harga': 'Rp 35.000',
+      'deskripsi':
+          'Nugget ayam premium dari daging ayam pilihan, tanpa pengawet. Cocok untuk lauk praktis keluarga. Berat bersih 500 gram.',
+    },
+    {
+      'nama': 'Sosis Sapi Jumbo',
+      'harga': 'Rp 42.000',
+      'deskripsi':
+          'Sosis sapi jumbo dengan tekstur kenyal dan rasa gurih. Ideal untuk sarapan, bekal anak, atau BBQ keluarga. Isi 10 pcs.',
+    },
+    {
+      'nama': 'Dimsum Mentai Premium',
+      'harga': 'Rp 28.000',
+      'deskripsi':
+          'Dimsum mentai premium dengan saus mentai creamy. Tinggal kukus 10 menit, siap disajikan. Isi 8 pcs.',
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final products = _produkList;
-
     return Scaffold(
-      // AppBar WAJIB (agar tombol back otomatis tersedia di screen 2)
       appBar: AppBar(
         title: const Text('Ikobana Frozen Food'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
-        elevation: 0,
       ),
-      // ListView berisi 3 Cards
-      body: ListView(
+      body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        children: [
-          // Banner Promo
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE3F2FD), // pastel biru
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.local_offer, color: Colors.blue, size: 32),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Promo Hari Ini!',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Diskon hingga 20% untuk produk pilihan',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
+        itemCount: produkList.length,
+        itemBuilder: (context, index) {
+          final produk = produkList[index];
+          return PricingCard(
+            name: produk['nama']!,
+            price: produk['harga']!,
+            // Event & State: Navigator.push untuk pindah Screen
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetailScreen(produk: produk),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          const Text(
-            'Katalog Produk',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-
-          // 3 Cards menggunakan PricingCard (ListTile) yang bisa diklik
-          ...products.map((produk) {
-            return PricingCard(
-              nama: produk['nama'] as String,
-              harga: produk['harga'] as String,
-              kategori: produk['kategori'] as String,
-              isPromo: produk['isPromo'] as bool,
-              onTap: () {
-                // NAVIGASI: Stack Navigation (Navigator.push) - SESUAI REQUIREMENT
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailScreen(produk: produk),
-                  ),
-                );
-              },
-            );
-          }),
-        ],
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
 // ============================================================
-// SCREEN 2: DETAIL KATALOG
-// WAJIB: StatefulWidget + layout Column + Container pastel + padding
+// SCREEN 2: DETAIL KATALOG (StatefulWidget)
 // ============================================================
 class DetailScreen extends StatefulWidget {
-  final Map<String, dynamic> produk;
+  final Map<String, String> produk;
 
   const DetailScreen({super.key, required this.produk});
 
@@ -184,8 +117,9 @@ class DetailScreen extends StatefulWidget {
 }
 
 class _DetailScreenState extends State<DetailScreen> {
-  // State interaktif
+  // State interaktif: jumlah item yang ingin dibeli
   int jumlah = 1;
+  // State interaktif: status favorit
   bool isFavorit = false;
 
   void tambahJumlah() {
@@ -208,27 +142,24 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final produk = widget.produk;
-
     return Scaffold(
-      // AppBar dengan tombol back otomatis
       appBar: AppBar(
-        title: Text(produk['nama'] as String),
+        title: Text(widget.produk['nama']!),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
+        // Tombol back otomatis muncul dari AppBar
       ),
-      // Layout vertikal dengan Column
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon/gambar produk
+            // ===== Gambar / Icon Produk =====
             Container(
               width: double.infinity,
               height: 200,
-              color: const Color(0xFFE8F5E9), // pastel hijau
+              color: Colors.green.shade50,
               child: const Icon(
-                Icons.ac_unit,
+                Icons.fastfood,
                 size: 100,
                 color: Colors.green,
               ),
@@ -239,48 +170,28 @@ class _DetailScreenState extends State<DetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Text nama produk
+                  // ===== Text: Nama Produk =====
                   Text(
-                    produk['nama'] as String,
+                    widget.produk['nama']!,
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
 
-                  // Chip kategori
-                  Row(
-                    children: [
-                      Chip(
-                        label: Text(produk['kategori'] as String),
-                        backgroundColor: const Color(0xFFE8F5E9),
-                        labelStyle: const TextStyle(color: Colors.green),
-                      ),
-                      if (produk['isPromo'] as bool) ...[
-                        const SizedBox(width: 8),
-                        Chip(
-                          label: const Text('PROMO'),
-                          backgroundColor: const Color(0xFFFFCDD2),
-                          labelStyle: const TextStyle(color: Colors.red),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Text harga
+                  // ===== Text: Harga =====
                   Text(
-                    produk['harga'] as String,
+                    widget.produk['harga']!,
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 20,
                       color: Colors.green,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Container warna pastel + padding untuk DESKRIPSI
+                  // ===== Container Pastel: Deskripsi =====
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -295,71 +206,26 @@ class _DetailScreenState extends State<DetailScreen> {
                           'Deskripsi Produk',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          produk['deskripsi'] as String,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            height: 1.5,
-                          ),
+                          widget.produk['deskripsi']!,
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
 
-                  // Container warna pastel + padding untuk INFO
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD), // pastel biru
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today,
-                                color: Colors.blue, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Masa Simpan: ${produk['expired']}',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            const Icon(Icons.scale,
-                                color: Colors.blue, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Berat Bersih: ${produk['berat']}',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // State interaktif: Jumlah
+                  // ===== State Interaktif: Jumlah Item =====
                   Row(
                     children: [
                       const Text(
                         'Jumlah:',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -383,9 +249,9 @@ class _DetailScreenState extends State<DetailScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // State interaktif: Favorit
+                  // ===== Tombol Favorit (State Interaktif) =====
                   OutlinedButton.icon(
                     onPressed: toggleFavorit,
                     icon: Icon(
@@ -393,41 +259,10 @@ class _DetailScreenState extends State<DetailScreen> {
                       color: isFavorit ? Colors.red : Colors.grey,
                     ),
                     label: Text(
-                      isFavorit
-                          ? 'Hapus dari Favorit'
-                          : 'Tambah ke Favorit',
+                      isFavorit ? 'Hapus dari Favorit' : 'Tambah ke Favorit',
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Tombol Beli
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Berhasil menambahkan $jumlah ${produk['nama']} ke keranjang',
-                            ),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.shopping_cart),
-                      label: Text(
-                        'Tambah ke Keranjang • ${produk['harga']}',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
