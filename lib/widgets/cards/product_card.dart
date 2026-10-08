@@ -1,9 +1,9 @@
 // lib/widgets/product_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme/app_theme.dart';
-import '../models/product_model.dart';
-import '../providers/cart_provider.dart';
+import '../../theme/app_theme.dart';
+import '../../models/product_model.dart';
+import '../../providers/cart_provider.dart';
 
 class ProductCard extends StatefulWidget {
   final ProductModel product;

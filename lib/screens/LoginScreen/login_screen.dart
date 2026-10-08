@@ -1,13 +1,13 @@
-// lib/screens/login_screen.dart
+// lib/screens/LoginScreen/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme/app_theme.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/google_button.dart';
-import '../providers/auth_provider.dart';
-import 'register_screen.dart';
-import 'home_screen.dart';
+import '../../theme/app_theme.dart';                        // ✅ ubah
+import '../../widgets/inputs/custom_text_field.dart';              // ✅ ubah
+import '../../widgets/buttons/primary_button.dart';                 // ✅ ubah
+import '../../widgets/buttons/google_button.dart';                  // ✅ ubah
+import '../../providers/auth_provider.dart';                // ✅ ubah
+import '../RegisterScreen/register_screen.dart';            // ✅ ubah
+import '../HomeScreen/home_screen.dart';                    // ✅ ubah
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -214,7 +214,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         label: 'Masuk Sekarang',
                         showArrow: true,
                         onPressed: () {
-                          // ✅ Simpan state login ke AuthProvider
                           context.read<AuthProvider>().login(
                                 email: emailController.text.isEmpty
                                     ? 'andi@ikobana.com'

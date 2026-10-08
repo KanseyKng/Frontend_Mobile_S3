@@ -1,6 +1,6 @@
 // lib/widgets/success_modal.dart
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 
 class SuccessModal extends StatelessWidget {
   final VoidCallback onGoToLogin;

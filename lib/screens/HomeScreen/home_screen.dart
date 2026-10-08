@@ -1,14 +1,14 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme/app_theme.dart';
-import '../providers/auth_provider.dart';
-import '../providers/cart_provider.dart';
-import '../models/product_model.dart';
-import '../widgets/category_pill.dart';
-import '../widgets/product_card.dart';
-import '../widgets/bento_reorder_card.dart';
-import 'cart_screen.dart';
+import '../../theme/app_theme.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/cart_provider.dart';
+import '../../models/product_model.dart';
+import '../../widgets/cards/category_pill.dart';
+import '../../widgets/cards/product_card.dart';
+import '../../widgets/cards/bento_reorder_card.dart';
+import '../CardScreen/cart_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

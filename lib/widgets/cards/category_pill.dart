@@ -1,6 +1,6 @@
 // lib/widgets/category_pill.dart
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 
 class CategoryPill extends StatelessWidget {
   final String emoji;

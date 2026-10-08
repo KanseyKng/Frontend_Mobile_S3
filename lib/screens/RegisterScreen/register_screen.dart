@@ -1,10 +1,10 @@
 // lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/primary_button.dart';
-import '../widgets/google_button.dart';
-import '../widgets/success_modal.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/inputs/custom_text_field.dart';
+import '../../widgets/buttons/primary_button.dart';
+import '../../widgets/buttons/google_button.dart';
+import '../../widgets/inputs/success_modal.dart';
 // ❌ TIDAK import login_screen.dart lagi (untuk memutus circular import)
 
 class RegisterScreen extends StatefulWidget {
