@@ -6,7 +6,9 @@ import 'models/user_model.dart';
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
-import 'screens/login_screen.dart';
+import 'providers/wishlist_provider.dart';
+import 'providers/order_provider.dart';
+import 'screens/LoginScreen/login_screen.dart';
 
 void main() {
   Map jsonResponse = {
@@ -34,6 +36,8 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
