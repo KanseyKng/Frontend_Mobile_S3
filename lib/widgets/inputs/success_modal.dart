@@ -13,7 +13,7 @@ class SuccessModal extends StatelessWidget {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.4),
+      barrierColor: Colors.black.withValues(alpha: 0.4),
       builder: (_) => SuccessModal(onGoToLogin: onGoToLogin),
     );
   }
@@ -39,7 +39,7 @@ class SuccessModal extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.info.withOpacity(0.3),
+                    color: AppColors.info.withValues(alpha: 0.3),
                     blurRadius: 15,
                     spreadRadius: 2,
                     offset: const Offset(0, 4),
