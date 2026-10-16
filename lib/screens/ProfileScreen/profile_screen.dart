@@ -1,7 +1,6 @@
 // lib/screens/ProfileScreen/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import '../EditProfileScreen/edit_profile_screen.dart';
