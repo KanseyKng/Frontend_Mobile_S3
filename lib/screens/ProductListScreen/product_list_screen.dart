@@ -209,7 +209,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: kategori.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
                 final isActive = selectedCategory == i;
                 return GestureDetector(
