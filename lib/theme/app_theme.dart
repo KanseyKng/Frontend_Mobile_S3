@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
+  // ============ OLD COLORS (Home, Cart, Checkout, dll) ============
   // Backgrounds
   static const Color background = Color(0xFFF7F9FB);
   static const Color cardWhite = Colors.white;
@@ -32,6 +33,27 @@ class AppColors {
   // Pastel
   static const Color pastelBlue = Color(0xFFB5D0FD);
   static const Color pastelOrange = Color(0xFFFFF3E0);
+
+  // ============ NEW COLORS (Profile, Privacy, Help Center) ============
+  // Background & Base
+  static const Color bgProfile = Color(0xFFFAF8FF); // Background baru
+  static const Color primaryProfile = Color(0xFF004FA5); // Biru Profil
+  
+  // Text Colors
+  static const Color textDark = Color(0xFF131B2E); // Text utama baru
+  static const Color textGrey = Color(0xFF414753); // Text sekunder baru
+  static const Color textDarkBlue = Color(0xFF001B3F); // Text khusus Privasi
+  
+  // Accents & Containers
+  static const Color lightBlue = Color(0xFFD7E2FF); // Badge & Highlight
+  static const Color veryLightBlue = Color(0xFFF2F3FF); // List item bg
+  static const Color borderLight = Color(0xFFEAEDFF); // Divider & Border
+  static const Color borderSubtle = Color(0xFFC2C6D5); // Border FAQ
+
+  // Special Colors
+  static const Color logoutRed = Color(0xFFA70519); // Tombol Logout
+  static const Color greenAccent = Color(0xFF6CF8BB); // Icon Help Center
+  static const Color greenDark = Color(0xFF00714D); // Text Help Center
 }
 
 class AppTheme {
