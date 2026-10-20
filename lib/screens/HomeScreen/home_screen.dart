@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/cart_provider.dart';
 import '../../models/product_model.dart';
 import '../../widgets/cards/category_pill.dart';
 import '../../widgets/cards/product_card.dart';
@@ -103,7 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== SLIVER APP BAR dengan LOGO HORIZONTAL =====
   Widget _buildSliverAppBar() {
     return SliverAppBar(
       pinned: true,
@@ -116,10 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
       titleSpacing: 16,
       title: Row(
         children: [
-          // ✅ LOGO HORIZONTAL
           const LogoHorizontal(),
           const SizedBox(width: 12),
-          // Lokasi
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,8 +185,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== BODY =====
   Widget _buildBodyContent() {
+    // ✅ INI KUNCI UTAMANYA: Memanggil auth untuk mendapatkan nama dari database
     final auth = context.watch<AuthProvider>();
 
     return Padding(
@@ -199,6 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
+            // ✅ Nama akan berubah otomatis sesuai yang didaftarkan/Login
             'Halo, ${auth.userName} 👋',
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
@@ -231,7 +228,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== SLIVER GRID =====
   Widget _buildProductSliverGrid() {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -259,7 +255,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== PROMO BANNER =====
   Widget _buildPromoBanner() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -340,7 +335,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              // ✅ "Belanja Sekarang" → ProductListScreen
               GestureDetector(
                 onTap: _goToProductList,
                 child: Container(
@@ -376,7 +370,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== KATEGORI =====
   Widget _buildKategoriSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: kategori.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, i) {
               return CategoryPill(
                 emoji: kategori[i]['emoji']!,
@@ -425,7 +418,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== JAMINAN =====
   Widget _buildJaminanBanner() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -479,7 +471,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ===== PRODUK HEADER =====
   Widget _buildProdukHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -506,7 +497,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        // ✅ "Lihat Semua" → ProductListScreen
         GestureDetector(
           onTap: _goToProductList,
           child: const Text(
