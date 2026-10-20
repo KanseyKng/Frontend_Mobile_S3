@@ -16,15 +16,6 @@ class WishlistScreen extends StatefulWidget {
 }
 
 class _WishlistScreenState extends State<WishlistScreen> {
-  int selectedFilter = 0;
-
-  final List<String> filters = const [
-    'Semua',
-    'Terbaru',
-    'Harga Terendah',
-    'Harga Tertinggi',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final wishlist = context.watch<WishlistProvider>();
@@ -57,7 +48,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
   Widget _buildHeader(BuildContext context) {
     return Container(
       height: 56,
-      color: Colors.white,
+      color: const Color(0xFFFAF8FF).withValues(alpha: 0.85),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -88,11 +79,11 @@ class _WishlistScreenState extends State<WishlistScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Info bar
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+          // Info bar Jaminan Dingin
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
             child: Row(
-              children: const [
+              children: [
                 Icon(Icons.ac_unit, size: 13, color: Color(0xFF006C49)),
                 SizedBox(width: 6),
                 Text(
@@ -108,79 +99,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
             ),
           ),
 
-          // Counter + Filter
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${wishlist.totalItems} produk tersimpan',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF414753),
-                ),
-              ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(shape: BoxShape.circle),
-                child: const Icon(Icons.search,
-                    color: Color(0xFF414753), size: 18),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Filter Chips
-          SizedBox(
-            height: 28,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: filters.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final isActive = selectedFilter == i;
-                return GestureDetector(
-                  onTap: () => setState(() => selectedFilter = i),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? const Color(0xFF004FA5)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(999),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        filters[i],
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
-                          fontWeight:
-                              isActive ? FontWeight.w600 : FontWeight.w500,
-                          color: isActive
-                              ? Colors.white
-                              : const Color(0xFF414753),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Grid Produk
+          // Grid Produk (Sesuai desain Figma baru)
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -271,7 +190,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                     ),
                   ),
                 ),
-                // Remove
+                // Remove dari Wishlist
                 Positioned(
                   top: 6,
                   right: 6,
@@ -340,7 +259,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
             ),
             const SizedBox(height: 6),
 
-            // Harga
+            // Harga (Harga coret disesuaikan)
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
