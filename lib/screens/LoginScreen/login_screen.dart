@@ -21,36 +21,56 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool ingatSaya = true;
   bool showPassword = false;
+  bool isLoading = false; // ✅ Tambahan untuk loading state
+  
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  void _handleLogin() {
+  // ✅ Fungsi diubah menjadi async
+  Future<void> _handleLogin() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    // Validasi sederhana
     if (email.isEmpty || password.isEmpty) {
       ErrorModal.show(
         context,
-        title: 'Email atau Password Salah',
-        description:
-            'Email atau password yang kamu masukkan tidak sesuai. Silakan periksa kembali dan coba lagi.',
-        hint: 'Periksa penulisan huruf besar/kecil',
+        title: 'Email atau Password Kosong',
+        description: 'Email dan kata sandi wajib diisi.',
+        hint: 'Periksa kembali form Anda',
         onRetry: () {},
         onForgotPassword: () {},
       );
       return;
     }
 
-    // Simulasi login berhasil
-    context.read<AuthProvider>().login(
-          email: email,
-          name: 'Andi',
+    setState(() => isLoading = true); // Mulai loading
+
+    // ✅ Panggil API Backend, TANPA hardcode nama
+    final error = await context.read<AuthProvider>().login(
+          identifier: email,
+          password: password,
         );
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
+
+    if (!mounted) return;
+    setState(() => isLoading = false); // Stop loading
+
+    if (error != null) {
+      // Jika login gagal
+      ErrorModal.show(
+        context,
+        title: 'Login Gagal',
+        description: error,
+        hint: 'Periksa email dan password Anda',
+        onRetry: () {},
+        onForgotPassword: () {},
+      );
+    } else {
+      // Jika login sukses, pindah ke Home
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    }
   }
 
   @override
@@ -64,21 +84,9 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 16),
-                // ✅ LOGO HORIZONTAL
-                Row(
-                  children: [
-                    const LogoHorizontal(),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Customer Login',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: LogoHorizontal(),
                 ),
                 const SizedBox(height: 32),
                 const Text(
@@ -121,28 +129,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
-                            'Email',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            'Aktif',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'Email / No. HP',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       CustomTextField(
@@ -225,10 +219,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      // ✅ Tombol menyesuaikan state loading
                       PrimaryButton(
-                        label: 'Masuk Sekarang',
-                        showArrow: true,
-                        onPressed: _handleLogin,
+                        label: isLoading ? 'Memproses...' : 'Masuk Sekarang',
+                        showArrow: !isLoading,
+                        onPressed: isLoading ? null : _handleLogin,
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -267,57 +262,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 content: Text('Google login ditekan')),
                           );
                         },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.inputBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.ac_unit,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Jaminan Rantai Dingin 100% Terjaga',
-                              style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Suhu -18°C terlindungi hingga ke pintu rumah Anda',
-                              style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
