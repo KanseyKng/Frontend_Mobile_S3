@@ -23,26 +23,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Customer Registration',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // ✅ LOGO SQUARE (Logo 2)
-              const LogoSquare(size: 84),
+              const SizedBox(height: 16),
+              // ✅ LOGO SQUARE
+              const Center(child: LogoSquare(size: 84)),
               const SizedBox(height: 12),
               const Text(
                 'Buat Akun LOCALMART',
@@ -119,15 +107,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 48,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.inputBg,
+                            color: AppColors.inputBg, // #F2F4F6
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
                           ),
                           child: const Center(
                             child: Text(
