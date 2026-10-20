@@ -2,17 +2,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/wishlist_provider.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import '../EditProfileScreen/edit_profile_screen.dart';
 import '../WishlistScreen/wishlist_screen.dart';
 import '../LoginScreen/login_screen.dart';
+import '../PrivacyPolicyScreen/privacy_policy_screen.dart';
+import '../HelpCenterScreen/help_center_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  // Fungsi untuk mengambil inisial otomatis
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+    List<String> nameParts = name.trim().split(' ');
+    if (nameParts.length > 1) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    }
+    return nameParts[0][0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final wishlist = context.watch<WishlistProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8FF),
@@ -25,7 +39,6 @@ class ProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: Column(
                   children: [
-                    // Header dengan judul "Profil"
                     const SizedBox(height: 8),
                     const Text(
                       'Profil',
@@ -38,15 +51,12 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // Profile Header Card
                     _buildProfileHeader(context, auth),
                     const SizedBox(height: 16),
 
-                    // Quick Stats (Poin)
                     _buildQuickStats(),
                     const SizedBox(height: 16),
 
-                    // SECTION: AKUN SAYA
                     _buildSectionTitle('AKUN SAYA'),
                     const SizedBox(height: 4),
                     _buildMenuCard(children: [
@@ -68,7 +78,7 @@ class ProfileScreen extends StatelessWidget {
                         icon: Icons.favorite_border,
                         title: 'Wishlist Produk',
                         subtitle: 'Produk beku favorit tersimpan',
-                        badge: '4',
+                        badge: wishlist.totalItems > 0 ? '${wishlist.totalItems}' : null,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -81,7 +91,6 @@ class ProfileScreen extends StatelessWidget {
                     ]),
                     const SizedBox(height: 16),
 
-                    // SECTION: PENGATURAN & BANTUAN
                     _buildSectionTitle('PENGATURAN & BANTUAN'),
                     const SizedBox(height: 4),
                     _buildMenuCard(children: [
@@ -89,19 +98,32 @@ class ProfileScreen extends StatelessWidget {
                         icon: Icons.headset_mic_outlined,
                         title: 'Bantuan & Pusat Dukungan',
                         subtitle: 'Layanan pelanggan 24/7 WhatsApp',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HelpCenterScreen(),
+                            ),
+                          );
+                        },
                       ),
                       _divider(),
                       _menuItem(
                         icon: Icons.description_outlined,
                         title: 'Syarat & Kebijakan Privasi',
                         subtitle: 'Ketentuan jaminan suhu dingin',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PrivacyPolicyScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ]),
                     const SizedBox(height: 16),
 
-                    // Logout
                     _buildLogoutButton(context),
                   ],
                 ),
@@ -132,7 +154,7 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Avatar
+              // Avatar otomatis
               Container(
                 width: 72,
                 height: 72,
@@ -140,10 +162,10 @@ class ProfileScreen extends StatelessWidget {
                   color: Color(0xFFEAEDFF),
                   shape: BoxShape.circle,
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'AP',
-                    style: TextStyle(
+                    _getInitials(auth.userName), 
+                    style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -157,8 +179,9 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ✅ MENGGUNAKAN auth.userName (Bukan hardcode)
                     Text(
-                      'Andi Pratama',
+                      auth.userName.isEmpty ? 'User' : auth.userName,
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 18,
@@ -167,10 +190,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
+                    // ✅ MENGGUNAKAN auth.userEmail (Bukan hardcode)
                     Text(
-                      auth.userEmail.isEmpty
-                          ? 'andi.pratama@email.com'
-                          : auth.userEmail,
+                      auth.userEmail.isEmpty ? 'Email belum diatur' : auth.userEmail,
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
@@ -178,7 +200,6 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    // Member Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
@@ -210,7 +231,6 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Edit Profil Button
           GestureDetector(
             onTap: () {
               Navigator.push(
@@ -247,6 +267,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // ... (Sisa kode _buildQuickStats, _buildSectionTitle, _buildMenuCard, _menuItem, _divider, _buildLogoutButton sama persis seperti sebelumnya)
   Widget _buildQuickStats() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -424,7 +445,6 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildLogoutButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // ✅ Alur #23: Keluar → Login
         context.read<AuthProvider>().logout();
         Navigator.pushAndRemoveUntil(
           context,
