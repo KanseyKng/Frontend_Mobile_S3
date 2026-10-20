@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../models/product_model.dart';
 import '../../widgets/cards/product_card.dart';
-import '../../widgets/common/logo_widget.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import '../ProductDetailScreen/product_detail_screen.dart';
 
