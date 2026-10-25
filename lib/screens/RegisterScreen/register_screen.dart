@@ -1,11 +1,14 @@
 // lib/screens/RegisterScreen/register_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // ✅ Tambahkan ini
 import '../../theme/app_theme.dart';
 import '../../widgets/inputs/custom_text_field.dart';
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/buttons/google_button.dart';
 import '../../widgets/inputs/success_modal.dart';
+import '../../widgets/inputs/error_modal.dart'; // ✅ Tambahkan ini
 import '../../widgets/common/logo_widget.dart';
+import '../../providers/auth_provider.dart'; // ✅ Tambahkan ini
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,6 +21,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool showPassword = false;
   bool showKonfirmasi = false;
   bool setujuSyarat = false;
+  bool isLoading = false; // ✅ State untuk loading
+
+  // ✅ Tambahkan Controllers
+  final nameController = TextEditingController();
+  final phoneController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+
+  // ✅ Fungsi Register
+  Future<void> _handleRegister() async {
+    // Validasi Dasar
+    if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
+      _showError('Data Belum Lengkap', 'Nama dan Nomor WhatsApp wajib diisi.');
+      return;
+    }
+    if (passwordController.text.length < 8) {
+      _showError('Password Lemah', 'Kata sandi minimal 8 karakter.');
+      return;
+    }
+    if (passwordController.text != confirmPasswordController.text) {
+      _showError('Konfirmasi Salah', 'Kata sandi dan konfirmasi tidak cocok.');
+      return;
+    }
+    if (!setujuSyarat) {
+      _showError('Syarat Belum Disetujui', 'Centang persetujuan Syarat & Ketentuan.');
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    // Panggil API Backend
+    final error = await context.read<AuthProvider>().register(
+          name: nameController.text.trim(),
+          email: emailController.text.trim(),
+          phone: phoneController.text.trim(),
+          password: passwordController.text,
+        );
+
+    if (!mounted) return;
+    setState(() => isLoading = false);
+
+    if (error == null) {
+      // ✅ Berhasil
+      SuccessModal.show(
+        context,
+        onGoToLogin: () {
+          Navigator.pop(context); // Kembali ke Login
+        },
+      );
+    } else {
+      // ❌ Gagal (misal email sudah terdaftar)
+      _showError('Registrasi Gagal', error);
+    }
+  }
+
+  void _showError(String title, String desc) {
+    ErrorModal.show(
+      context,
+      title: title,
+      description: desc,
+      hint: 'Periksa kembali data Anda',
+      onRetry: () {},
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +97,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             children: [
               const SizedBox(height: 16),
-              // ✅ LOGO SQUARE
               const Center(child: LogoSquare(size: 84)),
               const SizedBox(height: 12),
               const Text(
@@ -57,7 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ===== FORM CARD =====
+              // FORM CARD
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -77,7 +144,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Nama Lengkap
                     _buildLabel('Nama Lengkap', wajib: true),
                     const SizedBox(height: 6),
-                    const CustomTextField(
+                    CustomTextField(
+                      controller: nameController,
                       hint: 'Contoh: Andi Pratama',
                       prefixIcon: Icons.person_outline,
                       withShadow: true,
@@ -107,7 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 48,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.inputBg, // #F2F4F6
+                            color: AppColors.inputBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Center(
@@ -123,8 +191,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: CustomTextField(
+                            controller: phoneController,
                             hint: '812 3456 7890',
                             prefixIcon: Icons.phone_outlined,
                             withShadow: true,
@@ -139,7 +208,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Email
                     _buildLabel('Email'),
                     const SizedBox(height: 6),
-                    const CustomTextField(
+                    CustomTextField(
+                      controller: emailController,
                       hint: 'nama@email.com',
                       prefixIcon: Icons.email_outlined,
                       withShadow: true,
@@ -152,6 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _buildLabel('Kata Sandi', wajib: true),
                     const SizedBox(height: 6),
                     CustomTextField(
+                      controller: passwordController,
                       hint: 'Minimal 8 karakter',
                       prefixIcon: Icons.lock_outline,
                       withShadow: true,
@@ -159,14 +230,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       obscureText: !showPassword,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          showPassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                          showPassword ? Icons.visibility_off : Icons.visibility,
                           color: AppColors.textMuted,
                           size: 18,
                         ),
-                        onPressed: () =>
-                            setState(() => showPassword = !showPassword),
+                        onPressed: () => setState(() => showPassword = !showPassword),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -175,6 +243,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     _buildLabel('Konfirmasi Kata Sandi', wajib: true),
                     const SizedBox(height: 6),
                     CustomTextField(
+                      controller: confirmPasswordController,
                       hint: 'Ulangi kata sandi Anda',
                       prefixIcon: Icons.refresh,
                       withShadow: true,
@@ -182,14 +251,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       obscureText: !showKonfirmasi,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          showKonfirmasi
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                          showKonfirmasi ? Icons.visibility_off : Icons.visibility,
                           color: AppColors.textMuted,
                           size: 18,
                         ),
-                        onPressed: () =>
-                            setState(() => showKonfirmasi = !showKonfirmasi),
+                        onPressed: () => setState(() => showKonfirmasi = !showKonfirmasi),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -207,8 +273,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            onChanged: (v) =>
-                                setState(() => setujuSyarat = v ?? false),
+                            onChanged: (v) => setState(() => setujuSyarat = v ?? false),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -247,21 +312,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // TOMBOL DAFTAR SEKARANG
+                    // TOMBOL DAFTAR
                     PrimaryButton(
-                      label: 'Daftar Sekarang',
-                      showArrow: true,
-                      onPressed: () {
-                        SuccessModal.show(
-                          context,
-                          onGoToLogin: () {
-                            Navigator.popUntil(
-                              context,
-                              (route) => route.isFirst,
-                            );
-                          },
-                        );
-                      },
+                      label: isLoading ? 'Memproses...' : 'Daftar Sekarang',
+                      showArrow: !isLoading,
+                      onPressed: isLoading ? null : _handleRegister,
                     ),
                   ],
                 ),
@@ -271,9 +326,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               // Divider
               Row(
                 children: [
-                  Expanded(
-                    child: Divider(color: AppColors.divider, height: 1),
-                  ),
+                  Expanded(child: Divider(color: AppColors.divider, height: 1)),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
@@ -285,26 +338,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Divider(color: AppColors.divider, height: 1),
-                  ),
+                  Expanded(child: Divider(color: AppColors.divider, height: 1)),
                 ],
               ),
               const SizedBox(height: 16),
 
-              // Google Button
               GoogleButton(
                 label: 'Daftar dengan Google',
                 backgroundColor: Colors.white,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Google register ditekan')),
-                  );
-                },
+                onPressed: () {},
               ),
               const SizedBox(height: 16),
 
-              // Footer
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
