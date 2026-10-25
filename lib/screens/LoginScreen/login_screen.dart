@@ -21,12 +21,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool ingatSaya = true;
   bool showPassword = false;
-  bool isLoading = false; // ✅ Tambahan untuk loading state
+  bool isLoading = false; 
   
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // ✅ Fungsi diubah menjadi async
   Future<void> _handleLogin() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -43,19 +42,17 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => isLoading = true); // Mulai loading
+    setState(() => isLoading = true);
 
-    // ✅ Panggil API Backend, TANPA hardcode nama
     final error = await context.read<AuthProvider>().login(
           identifier: email,
           password: password,
         );
 
     if (!mounted) return;
-    setState(() => isLoading = false); // Stop loading
+    setState(() => isLoading = false);
 
     if (error != null) {
-      // Jika login gagal
       ErrorModal.show(
         context,
         title: 'Login Gagal',
@@ -65,7 +62,6 @@ class _LoginScreenState extends State<LoginScreen> {
         onForgotPassword: () {},
       );
     } else {
-      // Jika login sukses, pindah ke Home
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -179,9 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: !showPassword,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            showPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                            showPassword ? Icons.visibility_off : Icons.visibility,
                             color: AppColors.textMuted,
                             size: 18,
                           ),
@@ -219,7 +213,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // ✅ Tombol menyesuaikan state loading
                       PrimaryButton(
                         label: isLoading ? 'Memproses...' : 'Masuk Sekarang',
                         showArrow: !isLoading,
@@ -229,10 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: Divider(
-                              color: AppColors.divider,
-                              height: 1,
-                            ),
+                            child: Divider(color: AppColors.divider, height: 1),
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 12),
@@ -246,22 +236,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           Expanded(
-                            child: Divider(
-                              color: AppColors.divider,
-                              height: 1,
-                            ),
+                            child: Divider(color: AppColors.divider, height: 1),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       GoogleButton(
                         label: 'Masuk dengan Google',
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Google login ditekan')),
-                          );
-                        },
+                        onPressed: () {},
                       ),
                     ],
                   ),
