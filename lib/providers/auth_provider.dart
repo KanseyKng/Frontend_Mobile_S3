@@ -3,12 +3,19 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; 
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // ✅ PAKAI INI
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; 
 
 class AuthProvider extends ChangeNotifier {
-  static const String baseUrl = 'http://10.0.2.2:5000/api'; // Sesuaikan jika pakai localhost
+  // ✅ 1. URL DINAMIS (Otomatis deteksi Web atau Emulator)
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:5000/api';       // Untuk Chrome/Web
+    } else {
+      return 'http://10.0.2.2:5000/api';        // Untuk Emulator Android
+      // Catatan: Jika pakai HP fisik, ganti 10.0.2.2 dengan IP WiFi laptopmu (misal: 192.168.1.xx)
+    }
+  }
 
-  // ✅ IMPLEMENTASI FLUTTER SECURE STORAGE
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool _isLoggedIn = false;
@@ -20,6 +27,40 @@ class AuthProvider extends ChangeNotifier {
   String get userName => _userName;
   String get userEmail => _userEmail;
   String get userRole => _userRole;
+
+  // ==========================================
+  // ✅ 2. FUNGSI REGISTER (BARU DITAMBAHKAN)
+  // ==========================================
+  Future<String?> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'password': password,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201 && data['success'] == true) {
+        return null; // ✅ Sukses, akun tersimpan di database!
+      } else {
+        return data['message'] ?? 'Registrasi gagal.'; // ❌ Gagal (misal email sudah ada)
+      }
+    } catch (e) {
+      debugPrint('ERROR REGISTER API: $e');
+      return 'Gagal terhubung ke server.';
+    }
+  }
 
   // ==========================================
   // FUNGSI LOGIN
@@ -52,19 +93,16 @@ class AuthProvider extends ChangeNotifier {
         _userEmail = user['email'] ?? '';
         _userRole = user['role'];
 
-        // ✅ SIMPAN TOKEN KE SECURE STORAGE (Aman)
+        // Simpan token ke Secure Storage
         await _secureStorage.write(key: 'auth_token', value: token);
         
-        // Simpan data user biasa ke SharedPreferences (Opsional)
-        // final prefs = await SharedPreferences.getInstance();
-        // await prefs.setString('auth_user', jsonEncode(user));
-
         notifyListeners();
         return null; 
       } else {
         return data['message'] ?? 'Email/Password salah';
       }
     } catch (e) {
+      debugPrint('ERROR LOGIN API: $e');
       return 'Gagal terhubung ke server.';
     }
   }
@@ -74,7 +112,6 @@ class AuthProvider extends ChangeNotifier {
   // ==========================================
   Future<bool> checkSession() async {
     try {
-      // ✅ BACA TOKEN DARI SECURE STORAGE
       final token = await _secureStorage.read(key: 'auth_token');
       if (token == null) return false;
 
@@ -105,7 +142,6 @@ class AuthProvider extends ChangeNotifier {
   // LOGOUT
   // ==========================================
   Future<void> logout() async {
-    // ✅ HAPUS TOKEN DARI SECURE STORAGE
     await _secureStorage.delete(key: 'auth_token');
 
     _isLoggedIn = false;
