@@ -1,7 +1,8 @@
 // lib/screens/ProductListScreen/product_list_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
-import '../../models/product_model.dart';
+import '../../providers/product_provider.dart';
 import '../../widgets/cards/product_card.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import '../ProductDetailScreen/product_detail_screen.dart';
@@ -15,61 +16,28 @@ class ProductListScreen extends StatefulWidget {
 
 class _ProductListScreenState extends State<ProductListScreen> {
   int selectedCategory = 0;
-  String selectedSort = 'Terpopuler';
+  String searchQuery = "";
 
   final List<Map<String, String>> kategori = const [
-    {'emoji': '🍗', 'label': 'Nugget'},
+    {'emoji': '🍗', 'label': 'Semua'},
     {'emoji': '🌭', 'label': 'Sosis'},
     {'emoji': '🥟', 'label': 'Dimsum'},
     {'emoji': '🍟', 'label': 'Kentang'},
     {'emoji': '🍤', 'label': 'Seafood'},
   ];
 
-  final List<ProductModel> produk = const [
-    ProductModel(
-      id: 'p1',
-      name: 'Nugget Ayam Crispy',
-      price: 'Rp 35.000',
-      rating: 4.8,
-      reviewCount: 120,
-      stock: 25,
-      badgeLabel: 'Terlaris',
-      category: 'Nugget',
-    ),
-    ProductModel(
-      id: 'p2',
-      name: 'Sosis Premium',
-      price: 'Rp 28.000',
-      rating: 4.9,
-      reviewCount: 85,
-      stock: 8,
-      badgeLabel: 'Favorit',
-      category: 'Sosis',
-    ),
-    ProductModel(
-      id: 'p3',
-      name: 'Dimsum Ayam',
-      price: 'Rp 32.000',
-      rating: 4.9,
-      reviewCount: 95,
-      stock: 15,
-      badgeLabel: 'Favorit',
-      category: 'Dimsum',
-    ),
-    ProductModel(
-      id: 'p4',
-      name: 'Bakso Sapi Urat Super',
-      price: 'Rp 40.000',
-      rating: 4.7,
-      reviewCount: 70,
-      stock: 0,
-      badgeLabel: 'Habis',
-      category: 'Lainnya',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().fetchProducts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final productProvider = context.watch<ProductProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -77,13 +45,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
           Expanded(
             child: SafeArea(
               bottom: false,
-              child: CustomScrollView(
-                slivers: [
-                  _buildSliverAppBar(),
-                  SliverToBoxAdapter(child: _buildContent()),
-                  _buildProductSliverGrid(),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                ],
+              child: RefreshIndicator(
+                onRefresh: () => context.read<ProductProvider>().fetchProducts(),
+                child: CustomScrollView(
+                  slivers: [
+                    _buildSliverAppBar(),
+                    SliverToBoxAdapter(child: _buildContent(productProvider)),
+                    _buildProductSliverGrid(productProvider),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -118,13 +89,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(ProductProvider provider) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sub-header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -150,10 +120,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                 ],
               ),
-              // Badge Cold Chain
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFB5D0FD),
                   borderRadius: BorderRadius.circular(999),
@@ -178,23 +146,26 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Search Bar
           Container(
             height: 44,
             decoration: BoxDecoration(
               color: AppColors.inputBg,
               borderRadius: BorderRadius.circular(999),
             ),
-            child: const TextField(
-              decoration: InputDecoration(
+            child: TextField(
+              onChanged: (val) {
+                setState(() {
+                  searchQuery = val.toLowerCase();
+                });
+              },
+              decoration: const InputDecoration(
                 hintText: 'Cari produk frozen food...',
                 hintStyle: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
-                prefixIcon:
-                    Icon(Icons.search, color: AppColors.textSecondary, size: 18),
+                prefixIcon: Icon(Icons.search, color: AppColors.textSecondary, size: 18),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(vertical: 12),
               ),
@@ -202,20 +173,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Kategori Pills
           SizedBox(
             height: 28,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: kategori.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
                 final isActive = selectedCategory == i;
                 return GestureDetector(
                   onTap: () => setState(() => selectedCategory = i),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
                       color: isActive ? AppColors.primary : AppColors.inputBg,
                       borderRadius: BorderRadius.circular(999),
@@ -227,9 +196,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isActive
-                              ? Colors.white
-                              : AppColors.textSecondary,
+                          color: isActive ? Colors.white : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -240,46 +207,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Counter + Sort
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text.rich(
+          Text.rich(
+            TextSpan(
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+              children: [
+                const TextSpan(text: 'Menampilkan '),
                 TextSpan(
+                  text: '${provider.products.length} produk',
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  children: [
-                    const TextSpan(text: 'Menampilkan '),
-                    TextSpan(
-                      text: '${produk.length} produk',
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const TextSpan(text: ' frozen food'),
-                  ],
                 ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    selectedSort,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const Icon(Icons.keyboard_arrow_down,
-                      color: AppColors.primary, size: 16),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
         ],
@@ -287,19 +232,73 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  Widget _buildProductSliverGrid() {
+  Widget _buildProductSliverGrid(ProductProvider provider) {
+    if (provider.isLoading) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (provider.error != null) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 12),
+              Text(
+                provider.error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: Colors.red),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => provider.fetchProducts(),
+                child: const Text('Coba Lagi'),
+              )
+            ],
+          ),
+        ),
+      );
+    }
+
+    final selectedCatName = kategori[selectedCategory]['label']!;
+    final filteredProducts = provider.products.where((p) {
+      final matchSearch = p.name.toLowerCase().contains(searchQuery);
+      final matchCategory = selectedCatName == 'Semua' || p.category == selectedCatName;
+      return matchSearch && matchCategory;
+    }).toList();
+
+    if (filteredProducts.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Center(
+            child: Text(
+              'Produk tidak ditemukan.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ),
+      );
+    }
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 180,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 0.55,
+          childAspectRatio: 0.62,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final p = produk[index];
+            final p = filteredProducts[index];
             return ProductCard(
               product: p,
               onTap: () {
@@ -312,7 +311,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               },
             );
           },
-          childCount: produk.length,
+          childCount: filteredProducts.length,
         ),
       ),
     );
