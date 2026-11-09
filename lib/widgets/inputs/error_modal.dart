@@ -6,7 +6,6 @@ class ErrorModal extends StatelessWidget {
   final String description;
   final String? hint;
   final VoidCallback onRetry;
-  final VoidCallback? onForgotPassword;
 
   const ErrorModal({
     super.key,
@@ -14,7 +13,6 @@ class ErrorModal extends StatelessWidget {
     required this.description,
     this.hint,
     required this.onRetry,
-    this.onForgotPassword,
   });
 
   static Future<void> show(
@@ -23,7 +21,6 @@ class ErrorModal extends StatelessWidget {
     required String description,
     String? hint,
     required VoidCallback onRetry,
-    VoidCallback? onForgotPassword,
   }) {
     return showDialog(
       context: context,
@@ -34,7 +31,6 @@ class ErrorModal extends StatelessWidget {
         description: description,
         hint: hint,
         onRetry: onRetry,
-        onForgotPassword: onForgotPassword,
       ),
     );
   }
@@ -42,16 +38,14 @@ class ErrorModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       backgroundColor: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon error merah dengan halo
+            // Icon Error Merah
             Container(
               width: 64,
               height: 64,
@@ -67,16 +61,12 @@ class ErrorModal extends StatelessWidget {
                     color: Color(0xFFDC2626),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.priority_high,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                  child: const Icon(Icons.priority_high, color: Colors.white, size: 28),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-
+            
             // Judul
             Text(
               title,
@@ -86,6 +76,7 @@ class ErrorModal extends StatelessWidget {
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1A1A1A),
+                letterSpacing: -0.45,
               ),
             ),
             const SizedBox(height: 8),
@@ -95,7 +86,7 @@ class ErrorModal extends StatelessWidget {
               description,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'Inter',
+                fontFamily: 'Inter', // Sesuai HTML
                 fontSize: 13,
                 height: 1.6,
                 color: Color(0xFF666666),
@@ -103,11 +94,10 @@ class ErrorModal extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Error pill hint
+            // Error Pill (Hint)
             if (hint != null) ...[
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(8),
@@ -140,10 +130,10 @@ class ErrorModal extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
             ],
 
-            // Tombol "Coba Lagi"
+            // Tombol Coba Lagi
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -153,11 +143,9 @@ class ErrorModal extends StatelessWidget {
                   onRetry();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0066FF),
+                  backgroundColor: const Color(0xFF0066FF), // Biru sesuai HTML
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: const Text(
@@ -170,24 +158,6 @@ class ErrorModal extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Link "Lupa Password?"
-            if (onForgotPassword != null)
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  onForgotPassword!();
-                },
-                child: const Text(
-                  'Lupa Password?',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0066FF),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
