@@ -27,10 +27,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (qty > 1) setState(() => qty--);
   }
 
-  int _parsePrice() {
-    return int.parse(widget.product.price.replaceAll(RegExp(r'[^0-9]'), ''));
-  }
-
   String _formatRupiah(int value) {
     final str = value.toString();
     final buf = StringBuffer();
@@ -44,7 +40,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final p = widget.product;
-    final isFavorit = context.watch<WishlistProvider>().isInWishlist(p.id);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -63,9 +58,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoCard(p, isFavorit),
+                          _buildInfoCard(p),
                           const SizedBox(height: 12),
-                          _buildDeskripsiCard(),
+                          _buildDeskripsiCard(p),
                           const SizedBox(height: 12),
                           _buildSpesifikasiSection(),
                           const SizedBox(height: 12),
@@ -85,10 +80,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  // ===========================================================================
+  // ✅ HEADER: GAMBAR PRODUK DIPERBAIKI
+  // ===========================================================================
   Widget _buildHeader(ProductModel p) {
+    final isFavorit = context.watch<WishlistProvider>().isInWishlist(p.id);
+
     return Column(
       children: [
-        // AppBar
+        // AppBar custom
         Container(
           height: 64,
           color: Colors.white,
@@ -112,23 +112,57 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ),
         ),
-        // Gambar + Badge
+
+        // Gambar Produk Utama
         Container(
           height: 250,
           width: double.infinity,
           color: const Color(0xFFF2F4F6),
           child: Stack(
             children: [
-              const Center(
-                child: Icon(Icons.fastfood,
-                    size: 100, color: AppColors.textMuted),
+              // ✅ Gambar dari database (dengan fallback Icon)
+              Positioned.fill(
+                child: ClipRRect(
+                  child: p.fullImageUrl.isNotEmpty
+                      ? Image.network(
+                          p.fullImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Icon(
+                                Icons.fastfood,
+                                size: 100,
+                                color: AppColors.textMuted,
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            );
+                          },
+                        )
+                      : const Center(
+                          child: Icon(
+                            Icons.fastfood,
+                            size: 100,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                ),
               ),
+
+              // Badge Halal 100% & BPOM
               Positioned(
                 top: 12,
                 left: 12,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(999),
@@ -150,6 +184,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
               ),
+
+              // Tombol Wishlist
               Positioned(
                 top: 12,
                 right: 12,
@@ -165,9 +201,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      context.watch<WishlistProvider>().isInWishlist(p.id)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
+                      isFavorit ? Icons.favorite : Icons.favorite_border,
                       color: const Color(0xFFBA1A1A),
                       size: 20,
                     ),
@@ -181,7 +215,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildInfoCard(ProductModel p, bool isFavorit) {
+  Widget _buildInfoCard(ProductModel p) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -231,54 +265,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(width: 6),
-              const Text('•',
-                  style: TextStyle(color: Color(0xFFC3C6D7), fontSize: 16)),
-              const SizedBox(width: 6),
-              Text(
-                'Terjual 500+ pack',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
-          // Harga
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                p.price,
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Rp 42.000',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  decoration: TextDecoration.lineThrough,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
+          Text(
+            _formatRupiah(p.price),
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(height: 8),
-          // Stok + Expired
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.inputBg,
                   borderRadius: BorderRadius.circular(999),
@@ -288,19 +292,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      decoration: BoxDecoration(
+                        color: p.stock > 0 ? AppColors.primary : AppColors.error,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Tersedia — ${p.stock} stok',
-                      style: const TextStyle(
+                      p.stock > 0 ? 'Tersedia — ${p.stock} stok' : 'Stok Habis',
+                      style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: p.stock > 0 ? AppColors.textPrimary : AppColors.error,
                       ),
                     ),
                   ],
@@ -328,7 +332,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildDeskripsiCard() {
+  Widget _buildDeskripsiCard(ProductModel p) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -362,7 +366,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Nugget ayam frozen berkualitas dengan rasa gurih bumbu rempah asli dan tekstur renyah di luar, lembut juicy di dalam. Diproduksi higienis dari daging ayam dada pilihan tanpa pengawet berbahaya, menjadikannya santapan praktis favorit keluarga sehari-hari.',
+            p.description,
             style: TextStyle(
               fontFamily: 'Plus Jakarta Sans',
               fontSize: 14,
@@ -503,13 +507,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: qty > 1
-                          ? AppColors.primary
-                          : AppColors.inputBg,
+                      color: qty > 1 ? AppColors.primary : AppColors.inputBg,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.remove,
-                        color: Colors.white, size: 16),
+                    child: const Icon(Icons.remove, color: Colors.white, size: 16),
                   ),
                 ),
                 Expanded(
@@ -534,8 +535,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.add,
-                        color: Colors.white, size: 16),
+                    child: const Icon(Icons.add, color: Colors.white, size: 16),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -552,7 +552,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                     Text(
-                      _formatRupiah(_parsePrice() * qty),
+                      _formatRupiah(widget.product.price * qty),
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 15,
@@ -571,6 +571,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildBottomBar() {
+    final isOutOfStock = widget.product.stock == 0;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -587,7 +589,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         top: false,
         child: Row(
           children: [
-            // Tombol Chat
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -607,7 +608,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            // Total
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,7 +622,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   Text(
-                    _formatRupiah(_parsePrice() * qty),
+                    _formatRupiah(widget.product.price * qty),
                     style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18,
@@ -633,12 +633,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ],
               ),
             ),
-            // Tombol + Keranjang
             ElevatedButton.icon(
-              onPressed: () {
-                context
-                    .read<CartProvider>()
-                    .addToCart(widget.product, qty: qty);
+              onPressed: isOutOfStock ? null : () {
+                context.read<CartProvider>().addToCart(widget.product, qty: qty);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -652,10 +649,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               icon: const Icon(Icons.shopping_cart, size: 16),
               label: const Text('+ Keranjang'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: isOutOfStock ? Colors.grey : AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
