@@ -21,10 +21,17 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool ingatSaya = true;
   bool showPassword = false;
-  bool isLoading = false; 
-  
+  bool isLoading = false;
+
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleLogin() async {
     final email = emailController.text.trim();
@@ -36,8 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
         title: 'Email atau Password Kosong',
         description: 'Email dan kata sandi wajib diisi.',
         hint: 'Periksa kembali form Anda',
-        onRetry: () {},
-        onForgotPassword: () {},
+        onRetry: () {}, 
       );
       return;
     }
@@ -58,10 +64,10 @@ class _LoginScreenState extends State<LoginScreen> {
         title: 'Login Gagal',
         description: error,
         hint: 'Periksa email dan password Anda',
-        onRetry: () {},
-        onForgotPassword: () {},
+        onRetry: () {}, 
       );
     } else {
+      // ✅ Jika sukses, langsung ke Home
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -175,7 +181,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: !showPassword,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            showPassword ? Icons.visibility_off : Icons.visibility,
+                            showPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: AppColors.textMuted,
                             size: 18,
                           ),
@@ -222,7 +230,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: Divider(color: AppColors.divider, height: 1),
+                            child: Divider(
+                                color: AppColors.divider, height: 1),
                           ),
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 12),
@@ -236,7 +245,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           Expanded(
-                            child: Divider(color: AppColors.divider, height: 1),
+                            child: Divider(
+                                color: AppColors.divider, height: 1),
                           ),
                         ],
                       ),
