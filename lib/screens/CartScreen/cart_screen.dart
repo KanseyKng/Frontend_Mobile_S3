@@ -7,8 +7,15 @@ import '../../widgets/common/logo_widget.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import '../CheckoutScreen/checkout_screen.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  bool _isSummaryExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +40,8 @@ class CartScreen extends StatelessWidget {
               ),
             ),
           ),
+          if (cart.items.isNotEmpty)
+            _buildExpandableSummarySheet(context, cart),
           const BottomNavBar(activeIndex: 2),
         ],
       ),
@@ -68,71 +77,54 @@ class CartScreen extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, CartProvider cart) {
-    return Column(
+    return ListView(
+      padding: const EdgeInsets.all(16),
       children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Title
-              Row(
-                children: [
-                  const Text(
-                    'Keranjang Belanja',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFB5D0FD),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '${cart.totalItems} Produk',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF3E5980),
-                      ),
-                    ),
-                  ),
-                ],
+        Row(
+          children: [
+            const Text(
+              'Keranjang Belanja',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
-              const SizedBox(height: 16),
-
-              // Item Cards
-              ...cart.items.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildCartItem(context, cart, item),
-                  )),
-
-              const SizedBox(height: 8),
-
-              // Ringkasan Belanja
-              _buildRingkasan(cart),
-
-              const SizedBox(height: 12),
-
-              // Garansi
-              _buildGaransi(),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB5D0FD),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${cart.totalItems} Produk',
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF3E5980),
+                ),
+              ),
+            ),
+          ],
         ),
-        // Bottom bar
-        _buildBottomBar(context, cart),
+        const SizedBox(height: 16),
+        ...cart.items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildCartItem(context, cart, item),
+            )),
+        const SizedBox(height: 8),
+        _buildGaransi(),
+        const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildCartItem(BuildContext context, CartProvider cart, CartItem item) {
+  Widget _buildCartItem(
+      BuildContext context, CartProvider cart, CartItem item) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -151,7 +143,6 @@ class CartScreen extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Checkbox
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: SizedBox(
@@ -168,7 +159,6 @@ class CartScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Gambar
               Container(
                 width: 80,
                 height: 80,
@@ -176,11 +166,22 @@ class CartScreen extends StatelessWidget {
                   color: const Color(0xFFF2F4F6),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.fastfood,
-                    color: AppColors.textMuted, size: 32),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: item.product.fullImageUrl.isNotEmpty
+                      ? Image.network(
+                          item.product.fullImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.fastfood,
+                                color: AppColors.textMuted, size: 32);
+                          },
+                        )
+                      : const Icon(Icons.fastfood,
+                          color: AppColors.textMuted, size: 32),
+                ),
               ),
               const SizedBox(width: 12),
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,8 +198,9 @@ class CartScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
+                    // ✅ Hanya menampilkan harga, tanpa "/ 500g"
                     Text(
-                      '${item.product.price} / 500g',
+                      item.product.formattedPrice,
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
@@ -238,7 +240,6 @@ class CartScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Subtotal + Stepper
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -322,108 +323,6 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRingkasan(CartProvider cart) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Ringkasan Belanja',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _rowSummary('Subtotal Produk', cart.formatRupiah(cart.totalPrice)),
-          const SizedBox(height: 6),
-          _rowSummary('Estimasi Ongkir (Mojokerto)', 'Rp 15.000'),
-          const SizedBox(height: 6),
-          _rowSummary('Diskon Promo', '- Rp 0', color: const Color(0xFF455F87)),
-          const SizedBox(height: 12),
-          Container(height: 1, color: const Color(0xFFE0E3E5)),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Pembayaran',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Termasuk penanganan es batu',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                cart.formatRupiah(cart.totalPrice + 15000),
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _rowSummary(String label, String value, {Color? color}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 12,
-            fontWeight: color != null ? FontWeight.w400 : FontWeight.w600,
-            color: color ?? AppColors.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildGaransi() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -453,11 +352,12 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context, CartProvider cart) {
+  Widget _buildExpandableSummarySheet(
+      BuildContext context, CartProvider cart) {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -468,77 +368,225 @@ class CartScreen extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Column(
+            InkWell(
+              onTap: () => setState(
+                  () => _isSummaryExpanded = !_isSummaryExpanded),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Total Pembayaran',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF434655),
+                            ),
+                          ),
+                          // ✅ Harga murni subtotal (TIDAK ditambah 15000)
+                          Text(
+                            cart.formatRupiah(cart.totalPrice),
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF004AC6),
+                            ),
+                          ),
+                          const Text(
+                            'Hemat Rp 0',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF455F87),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        children: [
+                          Text(
+                            _isSummaryExpanded ? 'Sembunyikan' : 'Rincian',
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF004AC6),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          AnimatedRotation(
+                            turns: _isSummaryExpanded ? 0.5 : 0,
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: const Icon(
+                              Icons.keyboard_arrow_up,
+                              color: Color(0xFF727784),
+                              size: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: _isSummaryExpanded
+                  ? _buildRingkasanDetail(cart)
+                  : const SizedBox(width: double.infinity),
+            ),
+            _buildCheckoutButton(context, cart),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRingkasanDetail(CartProvider cart) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(height: 1, color: const Color(0xFFE0E3E5)),
+          const SizedBox(height: 12),
+          const Text(
+            'Ringkasan Belanja',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _rowSummary(
+              'Subtotal Produk', cart.formatRupiah(cart.totalPrice)),
+          const SizedBox(height: 6),
+          _rowSummary(
+            'Diskon Promo',
+            '- Rp 0',
+            color: const Color(0xFF455F87),
+          ),
+          const SizedBox(height: 12),
+          Container(height: 1, color: const Color(0xFFE0E3E5)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Total Pembayaran',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  Text(
-                    cart.formatRupiah(cart.totalPrice + 15000),
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const Text(
-                    'Hemat Rp 0',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF455F87),
-                    ),
-                  ),
+                  // ✅ Teks "Termasuk penanganan es batu" DIHAPUS
                 ],
               ),
-            ),
-            ElevatedButton(
-              onPressed: cart.items.isEmpty
-                  ? null
-                  : () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CheckoutScreen(),
-                        ),
-                      );
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                textStyle: const TextStyle(
+              // ✅ Harga murni subtotal (TIDAK ditambah 15000)
+              Text(
+                cart.formatRupiah(cart.totalPrice),
+                style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF004AC6),
                 ),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Lanjut ke Pembayaran'),
-                  SizedBox(width: 6),
-                  Icon(Icons.arrow_forward, size: 14),
-                ],
-              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _rowSummary(String label, String value, {Color? color}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12,
+            color: Color(0xFF434655),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: color ?? const Color(0xFF191C1E),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCheckoutButton(BuildContext context, CartProvider cart) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton(
+          onPressed: cart.items.isEmpty
+              ? null
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CheckoutScreen(),
+                    ),
+                  );
+                },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF004AC6),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
+            textStyle: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Lanjut ke Pembayaran'),
+              SizedBox(width: 8),
+              Icon(Icons.arrow_forward, size: 14),
+            ],
+          ),
         ),
       ),
     );
