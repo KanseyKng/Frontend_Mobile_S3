@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/address_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../models/product_model.dart';
 import '../../widgets/cards/category_pill.dart';
 import '../../widgets/cards/product_card.dart';
@@ -11,6 +14,7 @@ import '../../widgets/common/logo_widget.dart';
 import '../../widgets/common/bottom_nav_bar.dart';
 import '../ProductListScreen/product_list_screen.dart';
 import '../ProductDetailScreen/product_detail_screen.dart';
+import '../NotificationScreen/notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,53 +35,24 @@ class _HomeScreenState extends State<HomeScreen> {
     {'emoji': '⋯', 'label': 'Lainnya'},
   ];
 
-  final List<ProductModel> produk = const [
-    ProductModel(
-      id: 'p1',
-      name: 'Nugget Ayam Crispy',
-      price: 'Rp 35.000',
-      rating: 4.8,
-      reviewCount: 120,
-      stock: 25,
-      badgeLabel: 'Terlaris',
-      category: 'Nugget',
-    ),
-    ProductModel(
-      id: 'p2',
-      name: 'Sosis Sapi & Ayam Premium',
-      price: 'Rp 28.000',
-      rating: 4.9,
-      reviewCount: 85,
-      stock: 8,
-      badgeLabel: 'Favorit',
-      category: 'Sosis',
-    ),
-    ProductModel(
-      id: 'p3',
-      name: 'Dimsum Siomay Ayam',
-      price: 'Rp 32.000',
-      rating: 4.9,
-      reviewCount: 95,
-      stock: 15,
-      badgeLabel: 'Favorit',
-      category: 'Dimsum',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().fetchProducts();
+    });
+  }
 
   void _goToProductList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ProductListScreen()),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
   }
 
   void _goToProductDetail(ProductModel product) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProductDetailScreen(product: product),
-      ),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)));
+  }
+
+  void _goToNotification() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
   }
 
   @override
@@ -87,13 +62,16 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           Expanded(
-            child: CustomScrollView(
-              slivers: [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(child: _buildBodyContent()),
-                _buildProductSliverGrid(),
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-              ],
+            child: RefreshIndicator(
+              onRefresh: () => context.read<ProductProvider>().fetchProducts(),
+              child: CustomScrollView(
+                slivers: [
+                  _buildSliverAppBar(),
+                  SliverToBoxAdapter(child: _buildBodyContent()),
+                  _buildProductSliverGrid(),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                ],
+              ),
             ),
           ),
           const BottomNavBar(activeIndex: 0),
@@ -103,6 +81,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSliverAppBar() {
+    final addressText = context.watch<AddressProvider>().displayAddress;
+
     return SliverAppBar(
       pinned: true,
       floating: false,
@@ -116,22 +96,21 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const LogoHorizontal(),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.location_on,
-                        color: AppColors.primary, size: 12),
-                    SizedBox(width: 4),
+                    const Icon(Icons.location_on, color: AppColors.primary, size: 12),
+                    const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        'Mojokerto, Jawa Timur',
+                        addressText,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -141,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                Text(
+                const Text(
                   'LOCALMART - Beranda',
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -160,25 +139,39 @@ class _HomeScreenState extends State<HomeScreen> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 16),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              const Icon(Icons.notifications_none,
-                  color: AppColors.textSecondary, size: 24),
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                  ),
+          child: GestureDetector(
+            onTap: _goToNotification,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                const Icon(Icons.notifications_none, color: AppColors.textSecondary, size: 24),
+                Consumer<NotificationProvider>(
+                  builder: (context, notifProvider, child) {
+                    if (notifProvider.unreadCount == 0) return const SizedBox();
+                    return Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${notifProvider.unreadCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -186,7 +179,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBodyContent() {
-    // ✅ INI KUNCI UTAMANYA: Memanggil auth untuk mendapatkan nama dari database
     final auth = context.watch<AuthProvider>();
 
     return Padding(
@@ -195,7 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            // ✅ Nama akan berubah otomatis sesuai yang didaftarkan/Login
             'Halo, ${auth.userName} 👋',
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
@@ -229,27 +220,85 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProductSliverGrid() {
+    final productProvider = context.watch<ProductProvider>();
+
+    if (productProvider.isLoading) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (productProvider.error != null) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                productProvider.error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: Colors.red),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => productProvider.fetchProducts(),
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final selectedCatName = kategori[selectedCategory]['label']!;
+    final filteredProducts = productProvider.products.where((p) {
+      if (selectedCatName == 'Lainnya') {
+        final availableCats = kategori.map((e) => e['label']).toList();
+        return !availableCats.contains(p.category);
+      }
+      return p.category == selectedCatName;
+    }).toList();
+
+    if (filteredProducts.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(
+            child: Text(
+              'Belum ada produk di kategori ini.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ),
+      );
+    }
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 180,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 0.55,
+          childAspectRatio: 0.62,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            if (index == produk.length) {
+            if (index == filteredProducts.length) {
               return const BentoReorderCard();
             }
-            final p = produk[index];
+            final p = filteredProducts[index];
             return ProductCard(
               product: p,
               onTap: () => _goToProductDetail(p),
             );
           },
-          childCount: produk.length + 1,
+          childCount: filteredProducts.length + 1,
         ),
       ),
     );
@@ -257,6 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPromoBanner() {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -274,6 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Stack(
+        clipBehavior: Clip.hardEdge,
         children: [
           Positioned(
             right: -30,
@@ -288,11 +339,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(999),
@@ -328,6 +379,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 2),
               const Text(
                 'Untuk pesanan tertentu di seluruh area Mojokerto',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 12,
@@ -338,8 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
               GestureDetector(
                 onTap: _goToProductList,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -357,8 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       SizedBox(width: 6),
-                      Icon(Icons.arrow_forward,
-                          color: AppColors.primary, size: 11),
+                      Icon(Icons.arrow_forward, color: AppColors.primary, size: 11),
                     ],
                   ),
                 ),
@@ -377,24 +428,20 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: const [
-            Text(
-              'Kategori',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Text(
-              'Segar & Beku',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
+            Text('Kategori',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                )),
+            Text('Segar & Beku',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                )),
           ],
         ),
         const SizedBox(height: 12),
@@ -430,39 +477,28 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.shield_outlined,
-              color: AppColors.primary,
-              size: 18,
-            ),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.shield_outlined, color: AppColors.primary, size: 18),
           ),
           const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Jaminan Rantai Dingin',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text('Jaminan Rantai Dingin',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    )),
                 SizedBox(height: 2),
-                Text(
-                  'Ice pack higienis di setiap pesanan kurir instan.',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('Ice pack higienis di setiap pesanan kurir instan.',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    )),
               ],
             ),
           ),
@@ -478,36 +514,30 @@ class _HomeScreenState extends State<HomeScreen> {
         const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Produk Pilihan',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Text(
-              'Koleksi favorit warga Mojokerto',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
+            Text('Produk Pilihan',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                )),
+            Text('Koleksi favorit warga Mojokerto',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                )),
           ],
         ),
         GestureDetector(
           onTap: _goToProductList,
-          child: const Text(
-            'Lihat Semua',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-            ),
-          ),
+          child: const Text('Lihat Semua',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              )),
         ),
       ],
     );
