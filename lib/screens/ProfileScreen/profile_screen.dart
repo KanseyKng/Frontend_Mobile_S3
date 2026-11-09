@@ -9,11 +9,11 @@ import '../WishlistScreen/wishlist_screen.dart';
 import '../LoginScreen/login_screen.dart';
 import '../PrivacyPolicyScreen/privacy_policy_screen.dart';
 import '../HelpCenterScreen/help_center_screen.dart';
+import '../KelolaAlamatScreen/kelola_alamat_screen.dart'; // ✅ Tambah
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // Fungsi untuk mengambil inisial otomatis
   String _getInitials(String name) {
     if (name.isEmpty) return '?';
     List<String> nameParts = name.trim().split(' ');
@@ -50,10 +50,8 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     _buildProfileHeader(context, auth),
                     const SizedBox(height: 16),
-
                     _buildQuickStats(),
                     const SizedBox(height: 16),
 
@@ -68,23 +66,39 @@ class ProfileScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const EditProfileScreen(),
-                            ),
+                                builder: (_) => const EditProfileScreen()),
                           );
                         },
                       ),
                       _divider(),
+
+                      // ✅ MENU BARU: Kelola Alamat
                       _menuItem(
-                        icon: Icons.favorite_border,
-                        title: 'Wishlist Produk',
-                        subtitle: 'Produk beku favorit tersimpan',
-                        badge: wishlist.totalItems > 0 ? '${wishlist.totalItems}' : null,
+                        icon: Icons.location_on_outlined,
+                        title: 'Kelola Alamat Pengiriman',
+                        subtitle: 'Atur alamat utama & titik peta',
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const WishlistScreen(),
-                            ),
+                                builder: (_) => const KelolaAlamatScreen()),
+                          );
+                        },
+                      ),
+                      _divider(),
+
+                      _menuItem(
+                        icon: Icons.favorite_border,
+                        title: 'Wishlist Produk',
+                        subtitle: 'Produk beku favorit tersimpan',
+                        badge: wishlist.totalItems > 0
+                            ? '${wishlist.totalItems}'
+                            : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const WishlistScreen()),
                           );
                         },
                       ),
@@ -102,8 +116,7 @@ class ProfileScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const HelpCenterScreen(),
-                            ),
+                                builder: (_) => const HelpCenterScreen()),
                           );
                         },
                       ),
@@ -116,14 +129,13 @@ class ProfileScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const PrivacyPolicyScreen(),
-                            ),
+                                builder: (_) =>
+                                    const PrivacyPolicyScreen()),
                           );
                         },
                       ),
                     ]),
                     const SizedBox(height: 16),
-
                     _buildLogoutButton(context),
                   ],
                 ),
@@ -154,7 +166,6 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Avatar otomatis
               Container(
                 width: 72,
                 height: 72,
@@ -164,7 +175,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    _getInitials(auth.userName), 
+                    _getInitials(auth.userName),
                     style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 24,
@@ -179,7 +190,6 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ✅ MENGGUNAKAN auth.userName (Bukan hardcode)
                     Text(
                       auth.userName.isEmpty ? 'User' : auth.userName,
                       style: const TextStyle(
@@ -190,9 +200,10 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    // ✅ MENGGUNAKAN auth.userEmail (Bukan hardcode)
                     Text(
-                      auth.userEmail.isEmpty ? 'Email belum diatur' : auth.userEmail,
+                      auth.userEmail.isEmpty
+                          ? 'Email belum diatur'
+                          : auth.userEmail,
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
@@ -235,7 +246,8 @@ class ProfileScreen extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const EditProfileScreen()),
               );
             },
             child: Container(
@@ -267,7 +279,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ... (Sisa kode _buildQuickStats, _buildSectionTitle, _buildMenuCard, _menuItem, _divider, _buildLogoutButton sama persis seperti sebelumnya)
   Widget _buildQuickStats() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -408,8 +419,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             if (badge != null) ...[
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE2E7FF),
                   borderRadius: BorderRadius.circular(999),
