@@ -1,13 +1,28 @@
 // lib/screens/QrisPaymentScreen/qris_payment_screen.dart
+import 'dart:io'; // Tetap dipakai untuk Platform check di pengiriman
+import 'dart:typed_data'; // ✅ Tambahan untuk membaca gambar di Web
+import 'package:flutter/foundation.dart'; // ✅ Tambahan untuk kIsWeb
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; 
 import '../../theme/app_theme.dart';
+import '../../providers/cart_provider.dart';
+import '../../providers/order_provider.dart';
 import '../../widgets/common/logo_widget.dart';
 import '../OrderListScreen/order_list_screen.dart';
+import '../../config/app_config.dart'; 
 
 class QrisPaymentScreen extends StatefulWidget {
   final int total;
+  final String orderId; 
 
-  const QrisPaymentScreen({super.key, required this.total});
+  const QrisPaymentScreen({
+    super.key, 
+    required this.total,
+    required this.orderId, 
+  });
 
   @override
   State<QrisPaymentScreen> createState() => _QrisPaymentScreenState();
@@ -15,6 +30,87 @@ class QrisPaymentScreen extends StatefulWidget {
 
 class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
   bool showPetunjuk = true;
+  
+  // ✅ PERUBAHAN: Gunakan XFile dan Uint8List agar support Web
+  XFile? _pickedFile; 
+  Uint8List? _imageBytes;
+  bool _isLoading = false;
+
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      // Baca file menjadi bytes agar bisa ditampilkan di Web & HP
+      final bytes = await pickedFile.readAsBytes();
+      setState(() {
+        _pickedFile = pickedFile;
+        _imageBytes = bytes;
+      });
+    }
+  }
+
+  Future<void> _handlePaymentSuccess() async {
+    if (_pickedFile == null || _imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Harap unggah bukti transfer terlebih dahulu!')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${AppConfig.apiUrl}/transactions/upload-proof/${widget.orderId}'),
+      );
+      
+      // ✅ PERUBAHAN: Cara mengirim file yang support Web & Android/iOS
+      if (kIsWeb) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'proof',
+            _imageBytes!,
+            filename: _pickedFile!.name,
+          ),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath('proof', _pickedFile!.path),
+        );
+      }
+
+      var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+      var jsonResponse = jsonDecode(responseData);
+
+      if (response.statusCode == 200 && jsonResponse['success'] == true) {
+        if (mounted) {
+          context.read<CartProvider>().clear(); 
+          context.read<OrderProvider>().fetchOrders(); 
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const OrderListScreen()),
+            (route) => false,
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(jsonResponse['message'] ?? 'Gagal mengunggah bukti. Coba lagi.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Koneksi gagal: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +132,8 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                     _buildAmountCard(),
                     const SizedBox(height: 16),
                     _buildQrisCard(),
+                    const SizedBox(height: 16),
+                    _buildUploadBukti(),
                     const SizedBox(height: 16),
                     _buildPrimaryActions(),
                     const SizedBox(height: 16),
@@ -208,17 +306,6 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                           color: AppColors.primary,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          color: AppColors.inputBg,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.copy,
-                            size: 14, color: Color(0xFF455F87)),
-                      ),
                     ],
                   ),
                 ],
@@ -238,60 +325,6 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF2D486D),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(height: 1, color: const Color(0xFFE0E3E5)),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: const [
-                  Text(
-                    'No. Pesanan: ',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      color: Color(0xFF4E565D),
-                    ),
-                  ),
-                  Text(
-                    '#TRX-001',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.35,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.inputBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: const [
-                    Text(
-                      'Salin No.',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF455F87),
-                      ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(Icons.copy,
-                        size: 10, color: Color(0xFF455F87)),
-                  ],
                 ),
               ),
             ],
@@ -317,7 +350,6 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
       ),
       child: Column(
         children: [
-          // Header QRIS
           Container(
             padding: const EdgeInsets.only(bottom: 12),
             decoration: const BoxDecoration(
@@ -360,24 +392,6 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                     ),
                   ],
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE6E8EA),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'GPN',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
-                      color: Color(0xFF434655),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -391,17 +405,7 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 2),
-          const Text(
-            'NMID: ID1020039281741 • Mojokerto',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              color: AppColors.textMuted,
-            ),
-          ),
           const SizedBox(height: 16),
-          // QR Code placeholder
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -430,7 +434,7 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                         size: 120, color: AppColors.textPrimary),
                     SizedBox(height: 8),
                     Text(
-                      'QR Code',
+                      'QRIS Ikobana',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
@@ -442,37 +446,67 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              'Scan QRIS ini menggunakan GoPay, OVO, DANA, BCA, ShopeePay, atau m-Banking favorit Anda.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 12,
-                color: Color(0xFF676E76),
-              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUploadBukti() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Unggah Bukti Transfer',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.download, size: 14),
-            label: const Text('Simpan Gambar QR'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              backgroundColor: AppColors.inputBg,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              height: 120,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.inputBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
               ),
-              textStyle: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              // ✅ PERUBAHAN: Tampilkan gambar menggunakan Image.memory (Support Web)
+              child: _imageBytes != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        _imageBytes!,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cloud_upload_outlined,
+                            size: 40, color: Colors.grey),
+                        SizedBox(height: 8),
+                        Text('Klik untuk pilih foto dari galeri',
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
             ),
           ),
         ],
@@ -487,16 +521,18 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
           width: double.infinity,
           height: 48,
           child: ElevatedButton.icon(
-            onPressed: () {
-              // ✅ Alur #21: "Saya Sudah Bayar" → Pesanan Saya
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const OrderListScreen()),
-                (route) => false,
-              );
-            },
-            icon: const Icon(Icons.verified, size: 16),
-            label: const Text('Saya Sudah Bayar'),
+            onPressed: _isLoading ? null : _handlePaymentSuccess,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.verified, size: 16),
+            label: Text(_isLoading ? 'Mengunggah...' : 'Saya Sudah Bayar'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
               foregroundColor: Colors.white,
@@ -539,10 +575,11 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
 
   Widget _buildPetunjuk() {
     final steps = [
-      'Buka aplikasi mobile banking (BCA, Mandiri, BRI) atau e-wallet (GoPay, OVO, DANA, ShopeePay).',
-      'Pilih menu Bayar atau ikon Scan QR / QRIS.',
-      'Arahkan kamera smartphone ke kode QR di layar atau unggah gambar QR dari galeri.',
-      'Pastikan nama penerima tertulis IKOBANA Frozenfood dengan nominal pas Rp ${_formatNumber(widget.total)}, lalu masukkan PIN Anda.',
+      'Buka aplikasi mobile banking atau e-wallet favoritmu.',
+      'Pilih menu Bayar atau Scan QR / QRIS.',
+      'Arahkan kamera ke kode QR di atas.',
+      'Masukkan PIN Anda untuk menyelesaikan pembayaran.',
+      'Screenshot bukti transfer, lalu unggah di form di atas.',
     ];
 
     return Container(
