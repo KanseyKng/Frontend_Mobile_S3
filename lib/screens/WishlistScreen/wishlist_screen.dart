@@ -39,7 +39,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
               ),
             ),
           ),
-          const BottomNavBar(activeIndex: -1), // -1 = tidak ada tab aktif
+          const BottomNavBar(activeIndex: -1),
         ],
       ),
     );
@@ -122,6 +122,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
   }
 
   Widget _buildWishlistCard(ProductModel product) {
+    final bool isOutOfStock = product.stock == 0;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -257,15 +259,27 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 height: 1.25,
               ),
             ),
+            const SizedBox(height: 4),
+            
+            // ✅ Status Stok dari DB
+            Text(
+              isOutOfStock ? 'Stok Habis' : 'Sisa Stok: ${product.stock}',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isOutOfStock ? AppColors.error : AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 6),
 
-            // Harga (Harga coret disesuaikan)
+            // ✅ Harga (Gunakan formattedPrice karena tipe datanya int)
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Text(
-                  product.price,
+                  product.formattedPrice, // <-- Diubah dari product.price
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 14,
@@ -274,23 +288,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
                     color: Color(0xFF131B2E),
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Text(
-                  'Rp40.000',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 10,
-                    decoration: TextDecoration.lineThrough,
-                    color: Color(0xFF727784),
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: 8),
+            const Spacer(), // Memastikan tombol selalu di bawah
 
-            // Add to Cart
+            // ✅ Add to Cart (Mati jika stok 0)
             GestureDetector(
-              onTap: () {
+              onTap: isOutOfStock ? null : () {
                 context.read<CartProvider>().addToCart(product, qty: 1);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -303,7 +307,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF004FA5),
+                  // Tombol abu-abu jika stok habis
+                  color: isOutOfStock ? Colors.grey.shade400 : const Color(0xFF004FA5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Row(
