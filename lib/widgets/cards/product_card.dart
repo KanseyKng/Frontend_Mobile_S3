@@ -1,4 +1,4 @@
-// lib/widgets/product_card.dart
+// lib/widgets/cards/product_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
@@ -22,15 +22,20 @@ class ProductCard extends StatefulWidget {
 class _ProductCardState extends State<ProductCard> {
   int qty = 1;
 
-  void _increment() => setState(() => qty++);
-  void _decrement() => setState(() {
-        if (qty > 1) qty--;
-      });
+  void _increment() {
+    if (qty < widget.product.stock) setState(() => qty++);
+  }
+
+  void _decrement() {
+    if (qty > 1) setState(() => qty--);
+  }
 
   @override
   Widget build(BuildContext context) {
     final p = widget.product;
-    final bool lowStock = p.stock < 10;
+    final bool lowStock = p.stock > 0 && p.stock <= 5;
+    final bool outOfStock = p.stock == 0;
+    final bool hasBadge = p.badgeLabel.isNotEmpty;
     final bool isFavorit = p.badgeLabel == 'Favorit';
 
     return GestureDetector(
@@ -49,37 +54,64 @@ class _ProductCardState extends State<ProductCard> {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ✅ GAMBAR PRODUK (Diperbaiki)
             Stack(
               children: [
                 Container(
-                  height: 120,
+                  height: 110,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: const Color(0xFFECEEF0),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.fastfood,
-                    size: 48,
-                    color: AppColors.textMuted,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: p.fullImageUrl.isNotEmpty
+                        ? Image.network(
+                            p.fullImageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback jika gambar gagal dimuat
+                              return const Icon(
+                                Icons.fastfood,
+                                size: 48,
+                                color: AppColors.textMuted,
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              );
+                            },
+                          )
+                        : const Icon(
+                            Icons.fastfood,
+                            size: 48,
+                            color: AppColors.textMuted,
+                          ),
                   ),
                 ),
                 Positioned(
                   top: 6,
                   left: 6,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.ac_unit,
-                            color: AppColors.primary, size: 10),
+                        Icon(Icons.ac_unit, color: AppColors.primary, size: 10),
                         SizedBox(width: 2),
                         Text(
                           'Frozen',
@@ -94,30 +126,32 @@ class _ProductCardState extends State<ProductCard> {
                     ),
                   ),
                 ),
-                Positioned(
-                  bottom: 6,
-                  left: 6,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isFavorit ? AppColors.primary : AppColors.error,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      p.badgeLabel,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                if (hasBadge)
+                  Positioned(
+                    bottom: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isFavorit ? AppColors.primary : AppColors.error,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        p.badgeLabel,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
+
+            // Rating
             Row(
               children: [
                 const Icon(Icons.star, color: AppColors.star, size: 12),
@@ -126,75 +160,85 @@ class _ProductCardState extends State<ProductCard> {
                   p.rating.toString(),
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 2),
                 Text(
                   '(${p.reviewCount}+)',
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 10,
-                    fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
+
+            // Nama Produk
             Text(
               p.name,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
-                height: 1.3,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
+
+            // Status Stok
             Text(
-              'Tersedia • Stok ${p.stock}',
+              outOfStock ? 'Stok Habis' : 'Stok ${p.stock}',
               style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: lowStock ? AppColors.warning : AppColors.success,
+                fontWeight: FontWeight.w600,
+                color: outOfStock
+                    ? AppColors.error
+                    : (lowStock ? AppColors.warning : AppColors.success),
               ),
             ),
-            const SizedBox(height: 8),
+
+            const Spacer(), // ✅ Kunci posisi harga dan tombol ke bawah
+
+            // Harga
             Text(
-              p.price,
+              p.formattedPrice,
               style: const TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
+
+            // Tombol Aksi
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(2),
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFFECEEF0),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
                     children: [
                       _qtyBtn('-', _decrement),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
                           '$qty',
                           style: const TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
@@ -204,11 +248,10 @@ class _ProductCardState extends State<ProductCard> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 Expanded(
                   child: GestureDetector(
-                    // ✅ Global state: tambah ke CartProvider
-                    onTap: () {
+                    onTap: outOfStock ? null : () {
                       context.read<CartProvider>().addToCart(p, qty: qty);
                       setState(() => qty = 1);
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -222,8 +265,8 @@ class _ProductCardState extends State<ProductCard> {
                     child: Container(
                       height: 28,
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(8),
+                        color: outOfStock ? Colors.grey.shade400 : AppColors.primary,
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -234,7 +277,7 @@ class _ProductCardState extends State<ProductCard> {
                             'Tambah',
                             style: TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
@@ -256,8 +299,8 @@ class _ProductCardState extends State<ProductCard> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(4),
@@ -267,7 +310,7 @@ class _ProductCardState extends State<ProductCard> {
             label,
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
-              fontSize: 16,
+              fontSize: 14,
               color: AppColors.textPrimary,
             ),
           ),
