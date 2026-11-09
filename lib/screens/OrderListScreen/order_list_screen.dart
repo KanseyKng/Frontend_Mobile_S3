@@ -21,6 +21,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
   final List<String> filters = const [
     'Semua',
+    'Menunggu Verifikasi',
     'Diproses',
     'Dikirim',
     'Selesai',
@@ -28,11 +29,17 @@ class _OrderListScreenState extends State<OrderListScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().fetchOrders();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final orderProvider = context.watch<OrderProvider>();
-    final filteredOrders = orderProvider.getOrdersByStatus(
-      filters[selectedFilter],
-    );
+    final filteredOrders = orderProvider.getOrdersByStatus(filters[selectedFilter]);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -45,33 +52,11 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 children: [
                   _buildHeader(context),
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Pantau pesanan frozen food Anda',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildFilterTabs(orderProvider),
-                          const SizedBox(height: 16),
-                          if (filteredOrders.isEmpty)
-                            _buildEmptyState()
-                          else
-                            ...filteredOrders.map(
-                              (order) => Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _buildOrderCard(order),
-                              ),
-                            ),
-                        ],
-                      ),
+                    child: RefreshIndicator(
+                      onRefresh: () => context.read<OrderProvider>().fetchOrders(),
+                      child: filteredOrders.isEmpty
+                          ? _buildEmptyStateWithTabs(orderProvider)
+                          : _buildOrderList(orderProvider, filteredOrders),
                     ),
                   ),
                 ],
@@ -79,6 +64,94 @@ class _OrderListScreenState extends State<OrderListScreen> {
             ),
           ),
           const BottomNavBar(activeIndex: 3),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateWithTabs(OrderProvider orderProvider) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pantau pesanan frozen food Anda',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildFilterTabs(orderProvider),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Center(child: _buildEmptyState()),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: const [
+        Icon(Icons.receipt_long_outlined, size: 80, color: AppColors.textMuted),
+        SizedBox(height: 16),
+        Text(
+          'Belum ada pesanan',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrderList(OrderProvider orderProvider, List<OrderModel> orders) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Pantau pesanan frozen food Anda',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildFilterTabs(orderProvider),
+          const SizedBox(height: 16),
+          ...orders.map(
+            (order) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildOrderCard(order),
+            ),
+          ),
         ],
       ),
     );
@@ -118,11 +191,11 @@ class _OrderListScreenState extends State<OrderListScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
           final isActive = selectedFilter == i;
           final count = orderProvider.getOrderCountByStatus(filters[i]);
-          final showBadge = filters[i] == 'Diproses' && count > 0;
+          final showBadge = (filters[i] == 'Menunggu Verifikasi' || filters[i] == 'Diproses') && count > 0;
 
           return GestureDetector(
             onTap: () => setState(() => selectedFilter = i),
@@ -148,10 +221,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
                     Container(
                       width: 16,
                       height: 16,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                       child: Center(
                         child: Text(
                           '$count',
@@ -175,7 +245,24 @@ class _OrderListScreenState extends State<OrderListScreen> {
   }
 
   Widget _buildOrderCard(OrderModel order) {
-    final isActive = order.status == 'Diproses';
+    final isDiproses = order.status == 'Diproses';
+    final isMenunggu = order.status == 'Menunggu Verifikasi';
+    final isActive = isDiproses || isMenunggu;
+    final isDikirim = order.status == 'Dikirim';
+
+    Color getBadgeColor() {
+      if (isMenunggu) return const Color(0xFFFFF7ED);
+      if (isDiproses) return const Color(0xFFD5E3FF);
+      if (isDikirim) return const Color(0xFFE9D5FF);
+      return const Color(0xFFF3F4F6);
+    }
+
+    Color getBadgeTextColor() {
+      if (isMenunggu) return const Color(0xFFC2410C);
+      if (isDiproses) return const Color(0xFF004AC6);
+      if (isDikirim) return const Color(0xFF6B21A8);
+      return const Color(0xFF434655);
+    }
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -183,24 +270,15 @@ class _OrderListScreenState extends State<OrderListScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
-              Icon(
-                Icons.storefront,
-                size: 16,
-                color: isActive ? AppColors.primary : AppColors.textMuted,
-              ),
+              Icon(Icons.storefront, size: 16, color: isActive ? AppColors.primary : AppColors.textMuted),
               const SizedBox(width: 6),
               const Expanded(
                 child: Text(
@@ -228,92 +306,98 @@ class _OrderListScreenState extends State<OrderListScreen> {
                 ),
               ),
               const SizedBox(width: 6),
-              const Text('•',
-                  style: TextStyle(color: Color(0xFFC3C6D7), fontSize: 12)),
+              const Text('•', style: TextStyle(color: Color(0xFFC3C6D7), fontSize: 12)),
               const SizedBox(width: 6),
               Text(
                 order.date,
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: getBadgeColor(), borderRadius: BorderRadius.circular(4)),
+                child: Text(
+                  order.status,
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: getBadgeTextColor(),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-
-          // Item preview
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.inputBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
+            decoration: BoxDecoration(color: AppColors.inputBg, borderRadius: BorderRadius.circular(8)),
             child: Row(
               children: [
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
+                    child: order.getFirstImageUrl().isNotEmpty
+                        ? Image.network(
+                            order.getFirstImageUrl(),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.fastfood, color: AppColors.textMuted, size: 28),
+                          )
+                        : const Icon(Icons.fastfood, color: AppColors.textMuted, size: 28),
                   ),
-                  child: const Icon(Icons.fastfood,
-                      color: AppColors.textMuted, size: 28),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        order.items.first.productName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      if (isActive) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD5E3FF),
-                            borderRadius: BorderRadius.circular(6),
+                      // ✅ DAFTAR PRODUK YANG DIPESAN
+                      ...order.items.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          '${item.qty}x ${item.productName}',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
+                        ),
+                      )),
+                      const SizedBox(height: 4),
+                      if (isDiproses) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: const Color(0xFFD5E3FF), borderRadius: BorderRadius.circular(6)),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.ac_unit,
-                                  size: 11, color: AppColors.primary),
+                              Icon(Icons.ac_unit, size: 11, color: AppColors.primary),
                               SizedBox(width: 4),
                               Text(
                                 'Rantai Dingin Terjaga',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2D486D),
-                                ),
+                                style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2D486D)),
                               ),
                             ],
                           ),
                         ),
+                      ] else if (isMenunggu) ...[
+                        const Text(
+                          'Menunggu verifikasi bukti transfer oleh admin.',
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFFC2410C)),
+                        ),
+                      ] else if (isDikirim) ...[
+                        const Text(
+                          'Pesanan sedang dalam perjalanan.',
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF6B21A8)),
+                        ),
                       ] else ...[
-                        const SizedBox(height: 2),
                         const Text(
                           '300 gr • Suhu Simpan -18°C',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: AppColors.textSecondary),
                         ),
                       ],
                     ],
@@ -323,42 +407,67 @@ class _OrderListScreenState extends State<OrderListScreen> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Total
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Total Pesanan (${order.totalItems} barang)',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: AppColors.textSecondary),
               ),
               Text(
                 order.totalPrice,
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               ),
             ],
           ),
           const SizedBox(height: 8),
+          if (isDikirim)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Konfirmasi'),
+                      content: const Text('Apakah Anda sudah menerima pesanan ini dengan baik?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Ya, Selesai')),
+                      ],
+                    ),
+                  );
 
-          // Action button
-          if (isActive)
+                  if (confirm == true) {
+                    final success = await context.read<OrderProvider>().markAsCompleted(order.id);
+                    if (success && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pesanan telah selesai. Terima kasih!')),
+                      );
+                    } else if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gagal menyelesaikan pesanan.')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.check_circle_outline, size: 16),
+                label: const Text('Pesanan Selesai'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF16A34A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            )
+          else if (isActive)
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ChatScreen()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
                 },
                 icon: const Icon(Icons.chat_bubble_outline, size: 16),
                 label: const Text('Hubungi Penjual'),
@@ -366,14 +475,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
                   foregroundColor: AppColors.textPrimary,
                   side: const BorderSide(color: AppColors.divider),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600),
                 ),
               ),
             )
@@ -382,53 +485,20 @@ class _OrderListScreenState extends State<OrderListScreen> {
               alignment: Alignment.centerRight,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ProductListScreen()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
                 },
                 icon: const Icon(Icons.refresh, size: 14),
                 label: const Text('Beli Lagi'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFB5D0FD),
                   foregroundColor: const Color(0xFF3E5980),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
-                  textStyle: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  textStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return const Padding(
-      padding: EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Icon(Icons.receipt_long_outlined,
-              size: 64, color: AppColors.textMuted),
-          SizedBox(height: 12),
-          Text(
-            'Belum ada pesanan',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
         ],
       ),
     );
