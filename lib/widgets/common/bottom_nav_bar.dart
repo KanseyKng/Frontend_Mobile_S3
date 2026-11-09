@@ -34,7 +34,7 @@ class BottomNavBar extends StatelessWidget {
         child: SizedBox(
           height: 68,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            // ✅ Menggunakan Expanded di dalam _navItem agar membagi rata 1/5 layar
             children: [
               _navItem(
                 context, 0, Icons.home, 'Beranda',
@@ -107,20 +107,23 @@ class BottomNavBar extends StatelessWidget {
     final Color color =
         isActive ? AppColors.primary : AppColors.textSecondary;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 64,
+    // ✅ DIBUNGKUS Expanded AGAR AREA KLIK SELUAS LAYAR
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        // ✅ Memastikan area kosong di dalam Expanded tetap bisa diklik
+        splashColor: AppColors.primary.withValues(alpha: 0.1),
+        highlightColor: AppColors.primary.withValues(alpha: 0.05),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, color: color, size: 20),
+                Icon(icon, color: color, size: 22),
                 if (badge != null)
                   Positioned(
-                    right: -8,
+                    right: -10,
                     top: -4,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -147,10 +150,12 @@ class BottomNavBar extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 color: color,
               ),
             ),
