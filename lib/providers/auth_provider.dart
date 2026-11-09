@@ -1,36 +1,29 @@
 // lib/providers/auth_provider.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; 
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; 
+import 'package:shared_preferences/shared_preferences.dart'; 
+import '../config/app_config.dart'; // ✅ Import config
 
 class AuthProvider extends ChangeNotifier {
-  // ✅ 1. URL DINAMIS (Otomatis deteksi Web atau Emulator)
-  static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:5000/api';       // Untuk Chrome/Web
-    } else {
-      return 'http://10.0.2.2:5000/api';        // Untuk Emulator Android
-      // Catatan: Jika pakai HP fisik, ganti 10.0.2.2 dengan IP WiFi laptopmu (misal: 192.168.1.xx)
-    }
-  }
+  // ✅ Hapus logika kIsWeb/Platform, gunakan AppConfig
+  String get baseUrl => AppConfig.apiUrl;
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool _isLoggedIn = false;
+  bool _isCheckingSession = true; 
   String _userName = '';
   String _userEmail = '';
   String _userRole = '';
 
   bool get isLoggedIn => _isLoggedIn;
+  bool get isCheckingSession => _isCheckingSession;
   String get userName => _userName;
   String get userEmail => _userEmail;
   String get userRole => _userRole;
 
-  // ==========================================
-  // ✅ 2. FUNGSI REGISTER (BARU DITAMBAHKAN)
-  // ==========================================
   Future<String?> register({
     required String name,
     required String email,
@@ -48,13 +41,11 @@ class AuthProvider extends ChangeNotifier {
           'password': password,
         }),
       );
-
       final data = jsonDecode(response.body);
-
       if (response.statusCode == 201 && data['success'] == true) {
-        return null; // ✅ Sukses, akun tersimpan di database!
+        return null;
       } else {
-        return data['message'] ?? 'Registrasi gagal.'; // ❌ Gagal (misal email sudah ada)
+        return data['message'] ?? 'Registrasi gagal.';
       }
     } catch (e) {
       debugPrint('ERROR REGISTER API: $e');
@@ -62,9 +53,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ==========================================
-  // FUNGSI LOGIN
-  // ==========================================
   Future<String?> login({
     required String identifier,
     required String password,
@@ -93,9 +81,13 @@ class AuthProvider extends ChangeNotifier {
         _userEmail = user['email'] ?? '';
         _userRole = user['role'];
 
-        // Simpan token ke Secure Storage
         await _secureStorage.write(key: 'auth_token', value: token);
         
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_name', _userName);
+        await prefs.setString('user_email', _userEmail);
+        await prefs.setString('user_role', _userRole);
+
         notifyListeners();
         return null; 
       } else {
@@ -107,42 +99,45 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ==========================================
-  // CEK SESSION (Auto-Login)
-  // ==========================================
-  Future<bool> checkSession() async {
+  Future<void> checkSession() async {
     try {
       final token = await _secureStorage.read(key: 'auth_token');
-      if (token == null) return false;
+      
+      if (token == null) {
+        _isCheckingSession = false;
+        notifyListeners();
+        return;
+      }
 
+      final prefs = await SharedPreferences.getInstance();
+      _userName = prefs.getString('user_name') ?? '';
+      _userEmail = prefs.getString('user_email') ?? '';
+      _userRole = prefs.getString('user_role') ?? '';
+      _isLoggedIn = true;
+      
       final response = await http.get(
         Uri.parse('$baseUrl/auth/me'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final user = data['data'];
-
-        _isLoggedIn = true;
-        _userName = user['name'];
-        _userEmail = user['email'] ?? '';
-        _userRole = user['role'];
-
-        notifyListeners();
-        return true;
+      if (response.statusCode != 200) {
+        await logout();
       }
-      return false;
     } catch (e) {
-      return false;
+      debugPrint('ERROR CHECK SESSION: $e');
+    } finally {
+      _isCheckingSession = false;
+      notifyListeners();
     }
   }
 
-  // ==========================================
-  // LOGOUT
-  // ==========================================
   Future<void> logout() async {
     await _secureStorage.delete(key: 'auth_token');
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_name');
+    await prefs.remove('user_email');
+    await prefs.remove('user_role');
 
     _isLoggedIn = false;
     _userName = '';
