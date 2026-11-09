@@ -8,12 +8,8 @@ class CartItem {
 
   CartItem({required this.product, this.qty = 1});
 
-  int get subtotal {
-    final int priceNum = int.parse(
-      product.price.replaceAll(RegExp(r'[^0-9]'), ''),
-    );
-    return priceNum * qty;
-  }
+  // ✅ Subtotal sekarang langsung dikalikan (karena price sudah int)
+  int get subtotal => product.price * qty;
 }
 
 class CartProvider extends ChangeNotifier {
@@ -23,8 +19,7 @@ class CartProvider extends ChangeNotifier {
 
   int get totalItems => _items.fold(0, (sum, item) => sum + item.qty);
 
-  int get totalPrice =>
-      _items.fold(0, (sum, item) => sum + item.subtotal);
+  int get totalPrice => _items.fold(0, (sum, item) => sum + item.subtotal);
 
   bool isInCart(String productId) =>
       _items.any((i) => i.product.id == productId);
