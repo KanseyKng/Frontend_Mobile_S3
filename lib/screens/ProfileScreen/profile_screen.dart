@@ -9,7 +9,9 @@ import '../WishlistScreen/wishlist_screen.dart';
 import '../LoginScreen/login_screen.dart';
 import '../PrivacyPolicyScreen/privacy_policy_screen.dart';
 import '../HelpCenterScreen/help_center_screen.dart';
-import '../KelolaAlamatScreen/kelola_alamat_screen.dart'; // ✅ Tambah
+import '../KelolaAlamatScreen/kelola_alamat_screen.dart';
+import '../GantiPasswordScreen/change_password_screen.dart';
+import '../../config/app_config.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -21,6 +23,49 @@ class ProfileScreen extends StatelessWidget {
       return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
     }
     return nameParts[0][0].toUpperCase();
+  }
+
+  // ✅ Helper untuk memperbaiki URL gambar
+  String _getValidImageUrl(String url) {
+    if (url.isEmpty) return '';
+    final baseUrl = AppConfig.baseUrl;
+    return url
+        .replaceAll('http://localhost:5000', baseUrl)
+        .replaceAll('http://192.168.1.129:5000', baseUrl)
+        .replaceAll('http://10.200.118.253:5000', baseUrl)
+        .replaceAll('http://10.200.119.241:5000', baseUrl);
+  }
+
+  // ✅ Fungsi untuk membuka preview gambar full screen
+  void _openImagePreview(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(ctx),
+                child: InteractiveViewer(
+                  child: Image.network(imageUrl, fit: BoxFit.contain),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40, right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -42,12 +87,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     const Text(
                       'Profil',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF131B2E),
-                      ),
+                      style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF131B2E)),
                     ),
                     const SizedBox(height: 8),
                     _buildProfileHeader(context, auth),
@@ -59,47 +99,30 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     _buildMenuCard(children: [
                       _menuItem(
-                        icon: Icons.person_outline,
-                        title: 'Informasi Pribadi',
-                        subtitle: 'Nama, email, nomor WhatsApp',
+                        icon: Icons.lock_outline,
+                        title: 'Ubah Kata Sandi',
+                        subtitle: 'Amankan akunmu dengan password baru',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const EditProfileScreen()),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ChangePasswordScreen()));
                         },
                       ),
                       _divider(),
-
-                      // ✅ MENU BARU: Kelola Alamat
                       _menuItem(
                         icon: Icons.location_on_outlined,
                         title: 'Kelola Alamat Pengiriman',
                         subtitle: 'Atur alamat utama & titik peta',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const KelolaAlamatScreen()),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const KelolaAlamatScreen()));
                         },
                       ),
                       _divider(),
-
                       _menuItem(
                         icon: Icons.favorite_border,
                         title: 'Wishlist Produk',
                         subtitle: 'Produk beku favorit tersimpan',
-                        badge: wishlist.totalItems > 0
-                            ? '${wishlist.totalItems}'
-                            : null,
+                        badge: wishlist.totalItems > 0 ? '${wishlist.totalItems}' : null,
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const WishlistScreen()),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
                         },
                       ),
                     ]),
@@ -113,11 +136,7 @@ class ProfileScreen extends StatelessWidget {
                         title: 'Bantuan & Pusat Dukungan',
                         subtitle: 'Layanan pelanggan 24/7 WhatsApp',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const HelpCenterScreen()),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpCenterScreen()));
                         },
                       ),
                       _divider(),
@@ -126,12 +145,7 @@ class ProfileScreen extends StatelessWidget {
                         title: 'Syarat & Kebijakan Privasi',
                         subtitle: 'Ketentuan jaminan suhu dingin',
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                    const PrivacyPolicyScreen()),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()));
                         },
                       ),
                     ]),
@@ -149,39 +163,50 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileHeader(BuildContext context, AuthProvider auth) {
+    final photoUrl = auth.userPhotoUrl.isNotEmpty ? _getValidImageUrl(auth.userPhotoUrl) : '';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEAEDFF),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    _getInitials(auth.userName),
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF004590),
-                    ),
+              // ✅ Tampilkan Foto atau Inisial
+              GestureDetector(
+                onTap: photoUrl.isNotEmpty
+                    ? () => _openImagePreview(context, photoUrl)
+                    : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEAEDFF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: photoUrl.isNotEmpty
+                        ? Image.network(
+                            photoUrl,
+                            fit: BoxFit.cover,
+                            width: 72, height: 72,
+                            errorBuilder: (context, error, stackTrace) => Center(
+                              child: Text(
+                                _getInitials(auth.userName),
+                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF004590)),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              _getInitials(auth.userName),
+                              style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF004590)),
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -192,47 +217,23 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Text(
                       auth.userName.isEmpty ? 'User' : auth.userName,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF131B2E),
-                      ),
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF131B2E)),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      auth.userEmail.isEmpty
-                          ? 'Email belum diatur'
-                          : auth.userEmail,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        color: Color(0xFF414753),
-                      ),
+                      auth.userEmail.isEmpty ? 'Email belum diatur' : auth.userEmail,
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: Color(0xFF414753)),
                     ),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD7E2FF),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: const Color(0xFFD7E2FF), borderRadius: BorderRadius.circular(999)),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.verified,
-                              size: 12, color: Color(0xFF004590)),
+                          Icon(Icons.verified, size: 12, color: Color(0xFF004590)),
                           SizedBox(width: 4),
-                          Text(
-                            'Member Ikobana Frozenfood',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF004590),
-                            ),
-                          ),
+                          Text('Member Ikobana Frozenfood', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF004590))),
                         ],
                       ),
                     ),
@@ -244,32 +245,17 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 12),
           GestureDetector(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const EditProfileScreen()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()));
             },
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD7E2FF).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: const Color(0xFFD7E2FF).withValues(alpha: 0.5), borderRadius: BorderRadius.circular(12)),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.edit, size: 14, color: Color(0xFF004FA5)),
                   SizedBox(width: 4),
-                  Text(
-                    'Edit Profil',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF004FA5),
-                    ),
-                  ),
+                  Text('Edit Profil', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF004FA5))),
                 ],
               ),
             ),
@@ -285,48 +271,22 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD7E2FF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.star,
-                color: Color(0xFF004FA5), size: 20),
+            decoration: BoxDecoration(color: const Color(0xFFD7E2FF), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.star, color: Color(0xFF004FA5), size: 20),
           ),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: const [
-              Text(
-                'Poin Reward',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF414753),
-                ),
-              ),
-              Text(
-                '1.250 Poin',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF131B2E),
-                ),
-              ),
+              Text('Poin Reward', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF414753))),
+              Text('1.250 Poin', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF131B2E))),
             ],
           ),
         ],
@@ -339,16 +299,7 @@ class ProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            color: Color(0xFF727784),
-          ),
-        ),
+        child: Text(title, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: Color(0xFF727784))),
       ),
     );
   }
@@ -358,13 +309,7 @@ class ProfileScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))],
       ),
       child: Column(children: children),
     );
@@ -386,10 +331,7 @@ class ProfileScreen extends StatelessWidget {
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEAEDFF),
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: const Color(0xFFEAEDFF), borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, size: 18, color: const Color(0xFF004FA5)),
             ),
             const SizedBox(width: 12),
@@ -397,48 +339,20 @@ class ProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF131B2E),
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      color: Color(0xFF414753),
-                    ),
-                  ),
+                  Text(title, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF131B2E))),
+                  Text(subtitle, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: Color(0xFF414753))),
                 ],
               ),
             ),
             if (badge != null) ...[
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E7FF),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF131B2E),
-                  ),
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0xFFE2E7FF), borderRadius: BorderRadius.circular(999)),
+                child: Text(badge, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF131B2E))),
               ),
               const SizedBox(width: 8),
             ],
-            const Icon(Icons.chevron_right,
-                color: Color(0xFF727784), size: 18),
+            const Icon(Icons.chevron_right, color: Color(0xFF727784), size: 18),
           ],
         ),
       ),
@@ -446,11 +360,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _divider() {
-    return Container(
-      height: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      color: const Color(0xFFEAEDFF),
-    );
+    return Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 12), color: const Color(0xFFEAEDFF));
   }
 
   Widget _buildLogoutButton(BuildContext context) {
@@ -468,28 +378,14 @@ class ProfileScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))],
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.logout, color: Color(0xFFA70519), size: 16),
             SizedBox(width: 8),
-            Text(
-              'Keluar dari Akun',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFA70519),
-              ),
-            ),
+            Text('Keluar dari Akun', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFA70519))),
           ],
         ),
       ),
