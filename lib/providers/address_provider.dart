@@ -1,70 +1,96 @@
 // lib/providers/address_provider.dart
 import 'package:flutter/material.dart';
-
-class AddressModel {
-  final String recipientName;
-  final String phoneNumber;
-  final String fullAddress;
-  final String label;
-  final String notes;
-  final bool isPrimary;
-  final String coordinateNote;
-
-  AddressModel({
-    required this.recipientName,
-    required this.phoneNumber,
-    required this.fullAddress,
-    required this.label,
-    this.notes = '',
-    this.isPrimary = true,
-    this.coordinateNote =
-        'Koordinat telah disesuaikan dengan gerbang depan rumah',
-  });
-
-  AddressModel copyWith({
-    String? recipientName,
-    String? phoneNumber,
-    String? fullAddress,
-    String? label,
-    String? notes,
-    bool? isPrimary,
-    String? coordinateNote,
-  }) {
-    return AddressModel(
-      recipientName: recipientName ?? this.recipientName,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      fullAddress: fullAddress ?? this.fullAddress,
-      label: label ?? this.label,
-      notes: notes ?? this.notes,
-      isPrimary: isPrimary ?? this.isPrimary,
-      coordinateNote: coordinateNote ?? this.coordinateNote,
-    );
-  }
-}
+import '../models/address_model.dart';
+import '../services/address.service.dart';
 
 class AddressProvider extends ChangeNotifier {
-  AddressModel _currentAddress = AddressModel(
-    recipientName: 'Andi Setiawan',
-    phoneNumber: '812-3456-7890',
-    fullAddress:
-        'Jl. Raya Darmo No. 25, Wonokromo, Surabaya, Jawa Timur 60241',
-    label: 'Rumah',
-    notes:
-        'Pagar hitam nomor 25, letakkan paket di cooler box depan teras jika tidak ada orang di rumah.',
-    isPrimary: true,
-    coordinateNote:
-        'Koordinat telah disesuaikan dengan gerbang depan rumah',
-  );
+  final AddressService _service = AddressService();
 
-  AddressModel get currentAddress => _currentAddress;
+  List<AddressModel> _addresses = [];
+  AddressModel? _selectedAddress;
+  bool _isLoading = false;
+  String? _error;
 
-  String get displayAddress => _currentAddress.fullAddress;
-  String get displayName => _currentAddress.recipientName;
-  String get displayPhone => _currentAddress.phoneNumber;
-  String get displayLabel => _currentAddress.label;
+  List<AddressModel> get addresses => _addresses;
+  AddressModel? get selectedAddress => _selectedAddress;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
 
-  void updateAddress(AddressModel newAddress) {
-    _currentAddress = newAddress;
+  // Getters untuk backward compatibility
+  AddressModel get currentAddress => _selectedAddress ?? (_addresses.isNotEmpty
+      ? _addresses.first
+      : AddressModel(
+          id: '',
+          label: 'Belum ada',
+          recipientName: '',
+          phoneNumber: '',
+          street: '',
+          village: '',
+          district: '',
+          city: '',
+          province: '',
+          postalCode: '',
+          latitude: 0,
+          longitude: 0,
+          isPrimary: false,
+        ));
+
+  String get displayAddress => currentAddress.fullAddress;
+  String get displayName => currentAddress.recipientName;
+  String get displayPhone => currentAddress.phoneNumber;
+  String get displayLabel => currentAddress.label;
+
+  Future<void> fetchAddresses() async {
+    _isLoading = true;
+    _error = null;
     notifyListeners();
+
+    try {
+      _addresses = await _service.getAddresses();
+      if (_addresses.isNotEmpty) {
+        _selectedAddress = _addresses.firstWhere((a) => a.isPrimary, orElse: () => _addresses.first);
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void selectAddress(AddressModel address) {
+    _selectedAddress = address;
+    notifyListeners();
+  }
+
+  Future<String?> saveAddress(AddressModel address, {bool isNew = false}) async {
+    try {
+      bool success;
+      if (isNew) {
+        success = await _service.createAddress(address);
+      } else {
+        success = await _service.updateAddress(address);
+      }
+      if (success) {
+        await fetchAddresses();
+        return null;
+      }
+      return 'Gagal menyimpan alamat';
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  Future<String?> deleteAddress(String id) async {
+    try {
+      final success = await _service.deleteAddress(id);
+      if (success) {
+        await fetchAddresses();
+        return null;
+      }
+      return 'Gagal menghapus alamat';
+    } catch (e) {
+      return e.toString();
+    }
   }
 }
