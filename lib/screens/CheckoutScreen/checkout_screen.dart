@@ -9,7 +9,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../widgets/common/logo_widget.dart';
 import '../QrisPaymentScreen/qris_payment_screen.dart';
-import '../KelolaAlamatScreen/kelola_alamat_screen.dart';
+import 'select_address_screen.dart'; 
 import '../../config/app_config.dart'; 
 
 class CheckoutScreen extends StatefulWidget {
@@ -20,7 +20,6 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  int selectedShipping = 0;
   int selectedPayment = 0;
   bool _isLoading = false; 
 
@@ -42,7 +41,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'customerPhone': address.phoneNumber,
         'customerAddress': address.fullAddress,
         'items': items,
-        'totalPrice': total, // ✅ Harga murni subtotal produk
+        'totalPrice': total,
         'paymentMethod': selectedPayment == 0 ? 'QRIS' : 'E-Wallet',
       };
 
@@ -64,20 +63,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => QrisPaymentScreen(total: total, orderId: orderId),
-            ),
+            MaterialPageRoute(builder: (_) => QrisPaymentScreen(total: total, orderId: orderId)),
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(json['message'] ?? 'Gagal membuat pesanan')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(json['message'] ?? 'Gagal membuat pesanan')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Koneksi gagal: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Koneksi gagal: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -87,7 +80,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final subtotal = cart.totalPrice;
-    // ✅ Ongkir dan biaya tambahan dinonaktifkan dulu
     const shipping = 0; 
     const biayaLayanan = 0;
     final total = subtotal + shipping + biayaLayanan;
@@ -105,7 +97,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     _buildHeader(context),
                     const SizedBox(height: 8),
-                    _buildAddressCard(),
+                    _buildAddressCard(context),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: Column(
@@ -115,10 +107,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           const SizedBox(height: 8),
                           _buildProductList(cart),
                           const SizedBox(height: 16),
-                          // ✅ METODE PENGIRIMAN DINONAKTIFKAN DULU
-                          // _buildSectionTitle('METODE PENGIRIMAN', trailing: 'Kirim dari Jl. Pahlawan'),
-                          // const SizedBox(height: 8),
-                          // _buildShippingOption(...),
                           _buildSectionTitle('METODE PEMBAYARAN DIGITAL', trailing: 'Aman & Otomatis'),
                           const SizedBox(height: 8),
                           _buildPaymentCard(),
@@ -158,7 +146,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildAddressCard() {
+  Widget _buildAddressCard(BuildContext context) {
     final addr = context.watch<AddressProvider>().currentAddress;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -169,8 +157,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 32, height: 32,
               decoration: BoxDecoration(color: const Color(0xFFD5E3FF), borderRadius: BorderRadius.circular(8)),
               child: const Icon(Icons.location_on, size: 16, color: AppColors.primary),
             ),
@@ -191,7 +178,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
             ),
-            TextButton(onPressed: () async { await Navigator.push(context, MaterialPageRoute(builder: (_) => const KelolaAlamatScreen())); }, child: const Text('Ubah', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary))),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SelectAddressScreen()));
+              },
+              child: const Text('Ubah', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+            ),
           ],
         ),
       ),
@@ -222,8 +214,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: Row(
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 48, height: 48,
                       decoration: BoxDecoration(color: AppColors.inputBg, borderRadius: BorderRadius.circular(8)),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -286,8 +277,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Row(
                 children: [
                   Container(
-                    width: 16,
-                    height: 16,
+                    width: 16, height: 16,
                     decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: isSelected ? AppColors.primary : const Color(0xFF767676), width: 1.5)),
                     child: isSelected ? Center(child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle))) : null,
                   ),
@@ -320,9 +310,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       child: Column(
         children: [
           _summaryRow('Subtotal Produk', 'Rp ${_formatNumber(subtotal)}'),
-          const SizedBox(height: 8),
-          // ✅ Ongkir dan biaya lain dinonaktifkan dulu
-          // _summaryRow('Ongkos Kirim', 'Rp ${_formatNumber(shipping)}'),
           const SizedBox(height: 8),
           _summaryRow('Diskon Promo', 'Rp 0'),
           const SizedBox(height: 12),
