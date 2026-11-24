@@ -16,11 +16,18 @@ class OrderItem {
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
+    final name = json['productName'] as String? ?? 
+                 json['name'] as String? ?? 
+                 'Produk';
+
+    final img = json['imageUrl'] as String? ?? 
+                json['image'] as String? ?? '';
+
     return OrderItem(
-      productName: json['productName'] as String? ?? 'Produk',
+      productName: name,
       qty: (json['qty'] as num?)?.toInt() ?? 1,
-      price: json['price'] as String? ?? 'Rp 0',
-      imageUrl: json['imageUrl'] as String? ?? '',
+      price: json['price']?.toString() ?? 'Rp 0',
+      imageUrl: img,
     );
   }
 }
@@ -50,45 +57,48 @@ class OrderModel {
     var itemsList = <OrderItem>[];
     if (json['items'] != null) {
       final rawItems = json['items'];
-      // ✅ Jika dari backend berupa String JSON, decode dulu
       if (rawItems is String) {
         try {
           final decoded = jsonDecode(rawItems);
           if (decoded is List) {
-            itemsList = decoded.map((e) => OrderItem.fromJson(e)).toList();
+            itemsList = decoded.map((e) => OrderItem.fromJson(e as Map<String, dynamic>)).toList();
           }
-        } catch (_) {
-          // Abaikan jika gagal parse
+        } catch (e) {
+          print('Gagal decode items: $e');
         }
-      } 
-      // ✅ Jika sudah berupa List (misalnya dari cache), langsung map
-      else if (rawItems is List) {
-        itemsList = rawItems.map((e) => OrderItem.fromJson(e)).toList();
+      } else if (rawItems is List) {
+        itemsList = rawItems.map((e) => OrderItem.fromJson(e as Map<String, dynamic>)).toList();
       }
     }
 
     return OrderModel(
-      id: json['id'] as String,
-      orderId: json['orderId'] as String,
-      date: DateTime.parse(json['createdAt']).toLocal().toString().split(' ')[0],
-      status: json['status'] as String,
-      totalPrice: 'Rp ${(json['totalPrice'] as num).toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.")}',
+      id: json['id']?.toString() ?? '',
+      orderId: json['orderId']?.toString() ?? '',
+      date: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']).toLocal().toString().split(' ')[0]
+          : '-',
+      status: json['status']?.toString() ?? 'Menunggu',
+      totalPrice: 'Rp ${(json['totalPrice'] as num?)?.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => "${m[1]}.") ?? '0'}',
       totalItems: itemsList.fold(0, (sum, item) => sum + item.qty),
       items: itemsList,
-      paymentProof: json['paymentProof'] as String?,
+      paymentProof: json['paymentProof']?.toString(),
     );
   }
 
-  // ✅ Helper untuk mendapatkan URL gambar pertama
   String getFirstImageUrl() {
     if (items.isEmpty) return '';
-    final url = items.first.imageUrl;
-    if (url.isEmpty) return '';
+    final rawUrl = items.first.imageUrl.trim();
+    if (rawUrl.isEmpty) return '';
+
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+      return rawUrl;
+    }
     
-    // Ubah URL localhost menjadi IP dari AppConfig
-    return url
-        .replaceAll('http://localhost:5000', AppConfig.baseUrl)
-        .replaceAll('http://192.168.1.129:5000', AppConfig.baseUrl)
-        .replaceAll('http://10.200.118.253:5000', AppConfig.baseUrl);
+    final baseUrl = AppConfig.baseUrl;
+    if (rawUrl.startsWith('/')) {
+      return '$baseUrl$rawUrl';
+    } else {
+      return '$baseUrl/$rawUrl';
+    }
   }
 }
