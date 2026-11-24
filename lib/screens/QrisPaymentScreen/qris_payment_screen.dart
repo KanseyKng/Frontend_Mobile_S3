@@ -1,7 +1,7 @@
 // lib/screens/QrisPaymentScreen/qris_payment_screen.dart
-import 'dart:io'; // Tetap dipakai untuk Platform check di pengiriman
-import 'dart:typed_data'; // ✅ Tambahan untuk membaca gambar di Web
-import 'package:flutter/foundation.dart'; // ✅ Tambahan untuk kIsWeb
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +10,7 @@ import 'dart:convert';
 import '../../theme/app_theme.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/notification_provider.dart'; // ✅ IMPORT
 import '../../widgets/common/logo_widget.dart';
 import '../OrderListScreen/order_list_screen.dart';
 import '../../config/app_config.dart'; 
@@ -30,8 +31,6 @@ class QrisPaymentScreen extends StatefulWidget {
 
 class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
   bool showPetunjuk = true;
-  
-  // ✅ PERUBAHAN: Gunakan XFile dan Uint8List agar support Web
   XFile? _pickedFile; 
   Uint8List? _imageBytes;
   bool _isLoading = false;
@@ -39,7 +38,6 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
   Future<void> _pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      // Baca file menjadi bytes agar bisa ditampilkan di Web & HP
       final bytes = await pickedFile.readAsBytes();
       setState(() {
         _pickedFile = pickedFile;
@@ -64,7 +62,6 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
         Uri.parse('${AppConfig.apiUrl}/transactions/upload-proof/${widget.orderId}'),
       );
       
-      // ✅ PERUBAHAN: Cara mengirim file yang support Web & Android/iOS
       if (kIsWeb) {
         request.files.add(
           http.MultipartFile.fromBytes(
@@ -85,6 +82,9 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
 
       if (response.statusCode == 200 && jsonResponse['success'] == true) {
         if (mounted) {
+          // ✅ Refresh data notifikasi dari API
+          context.read<NotificationProvider>().fetchNotifications();
+
           context.read<CartProvider>().clear(); 
           context.read<OrderProvider>().fetchOrders(); 
 
@@ -488,7 +488,6 @@ class _QrisPaymentScreenState extends State<QrisPaymentScreen> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              // ✅ PERUBAHAN: Tampilkan gambar menggunakan Image.memory (Support Web)
               child: _imageBytes != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
