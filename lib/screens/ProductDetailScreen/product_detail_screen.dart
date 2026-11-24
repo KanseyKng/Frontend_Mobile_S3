@@ -80,15 +80,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // ===========================================================================
-  // ✅ HEADER: GAMBAR PRODUK DIPERBAIKI
-  // ===========================================================================
   Widget _buildHeader(ProductModel p) {
     final isFavorit = context.watch<WishlistProvider>().isInWishlist(p.id);
 
     return Column(
       children: [
-        // AppBar custom
         Container(
           height: 64,
           color: Colors.white,
@@ -112,15 +108,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ),
         ),
-
-        // Gambar Produk Utama
         Container(
           height: 250,
           width: double.infinity,
           color: const Color(0xFFF2F4F6),
           child: Stack(
             children: [
-              // ✅ Gambar dari database (dengan fallback Icon)
               Positioned.fill(
                 child: ClipRRect(
                   child: p.fullImageUrl.isNotEmpty
@@ -128,78 +121,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           p.fullImageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Icon(
-                                Icons.fastfood,
-                                size: 100,
-                                color: AppColors.textMuted,
-                              ),
-                            );
+                            return const Center(child: Icon(Icons.fastfood, size: 100, color: AppColors.textMuted));
                           },
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
-                            return const Center(
-                              child: SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            );
+                            return const Center(child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2)));
                           },
                         )
-                      : const Center(
-                          child: Icon(
-                            Icons.fastfood,
-                            size: 100,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
+                      : const Center(child: Icon(Icons.fastfood, size: 100, color: AppColors.textMuted)),
                 ),
               ),
-
-              // Badge Halal 100% & BPOM
               Positioned(
                 top: 12,
                 left: 12,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(999)),
                   child: const Row(
                     children: [
                       Icon(Icons.verified, color: AppColors.primary, size: 12),
                       SizedBox(width: 4),
-                      Text(
-                        'Halal 100% & BPOM',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+                      Text('Halal 100% & BPOM', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                     ],
                   ),
                 ),
               ),
-
-              // Tombol Wishlist
+              // ✅ TOMBOL WISHLIST DIPERBAIKI
               Positioned(
                 top: 12,
                 right: 12,
                 child: GestureDetector(
-                  onTap: () {
-                    context.read<WishlistProvider>().toggleWishlist(p);
+                  onTap: () async {
+                    // Panggil fungsi async dari provider
+                    await context.read<WishlistProvider>().toggleWishlist(p);
                   },
                   child: Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFFDAD6),
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: const BoxDecoration(color: Color(0xFFFFDAD6), shape: BoxShape.circle),
                     child: Icon(
                       isFavorit ? Icons.favorite : Icons.favorite_border,
                       color: const Color(0xFFBA1A1A),
@@ -218,95 +177,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildInfoCard(ProductModel p) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            p.name,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              height: 1.3,
-            ),
-          ),
+          Text(p.name, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.3)),
           const SizedBox(height: 8),
           Row(
             children: [
               const Icon(Icons.star, color: Color(0xFFEAB308), size: 14),
               const SizedBox(width: 4),
-              Text(
-                p.rating.toString(),
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              Text(p.rating.toString(), style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
               const SizedBox(width: 4),
-              Text(
-                '(${p.reviewCount} ulasan)',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              Text('(${p.reviewCount} ulasan)', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: AppColors.textSecondary)),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            _formatRupiah(p.price),
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-            ),
-          ),
+          Text(_formatRupiah(p.price), style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.primary)),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.inputBg,
-                  borderRadius: BorderRadius.circular(999),
-                ),
+                decoration: BoxDecoration(color: AppColors.inputBg, borderRadius: BorderRadius.circular(999)),
                 child: Row(
                   children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: p.stock > 0 ? AppColors.primary : AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: p.stock > 0 ? AppColors.primary : AppColors.error, shape: BoxShape.circle)),
                     const SizedBox(width: 6),
-                    Text(
-                      p.stock > 0 ? 'Tersedia — ${p.stock} stok' : 'Stok Habis',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: p.stock > 0 ? AppColors.textPrimary : AppColors.error,
-                      ),
-                    ),
+                    Text(p.stock > 0 ? 'Tersedia — ${p.stock} stok' : 'Stok Habis', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: FontWeight.w600, color: p.stock > 0 ? AppColors.textPrimary : AppColors.error)),
                   ],
                 ),
               ),
@@ -314,15 +213,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 children: [
                   Icon(Icons.ac_unit, size: 13, color: AppColors.textSecondary),
                   SizedBox(width: 4),
-                  Text(
-                    'Exp. 6 Bulan (Frozen)',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  Text('Exp. 6 Bulan (Frozen)', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
                 ],
               ),
             ],
@@ -335,17 +226,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildDeskripsiCard(ProductModel p) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -353,27 +234,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: const [
               Icon(Icons.info_outline, color: AppColors.primary, size: 18),
               SizedBox(width: 6),
-              Text(
-                'Deskripsi Produk',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              Text('Deskripsi Produk', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            p.description,
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              height: 1.6,
-              color: AppColors.textSecondary.withValues(alpha: 0.9),
-            ),
-          ),
+          Text(p.description, style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, height: 1.6, color: AppColors.textSecondary.withValues(alpha: 0.9))),
         ],
       ),
     );
@@ -383,15 +248,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Spesifikasi & Penyimpanan',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        const Text('Spesifikasi & Penyimpanan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -415,39 +272,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _specItem(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text(value, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         ],
       ),
     );
@@ -456,49 +287,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildAturJumlahCard() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))]),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Atur Jumlah Pembelian:',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                'Maks. ${widget.product.stock} pack',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              const Text('Atur Jumlah Pembelian:', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              Text('Maks. ${widget.product.stock} pack', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
             ],
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.inputBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: AppColors.inputBg, borderRadius: BorderRadius.circular(12)),
             child: Row(
               children: [
                 GestureDetector(
@@ -506,24 +308,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
-                      color: qty > 1 ? AppColors.primary : AppColors.inputBg,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    decoration: BoxDecoration(color: qty > 1 ? AppColors.primary : AppColors.inputBg, borderRadius: BorderRadius.circular(8)),
                     child: const Icon(Icons.remove, color: Colors.white, size: 16),
                   ),
                 ),
                 Expanded(
                   child: Center(
-                    child: Text(
-                      '$qty',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+                    child: Text('$qty', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                   ),
                 ),
                 GestureDetector(
@@ -531,10 +322,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
                     child: const Icon(Icons.add, color: Colors.white, size: 16),
                   ),
                 ),
@@ -542,24 +330,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
-                      'Subtotal',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      _formatRupiah(widget.product.price * qty),
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    const Text('Subtotal', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                    Text(_formatRupiah(widget.product.price * qty), style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.primary)),
                   ],
                 ),
               ],
@@ -575,36 +347,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, -4))]),
       child: SafeArea(
         top: false,
         child: Row(
           children: [
             GestureDetector(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ChatScreen()),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()));
               },
               child: Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.inputBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.chat_bubble_outline,
-                    color: AppColors.textPrimary),
+                decoration: BoxDecoration(color: AppColors.inputBg, borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.chat_bubble_outline, color: AppColors.textPrimary),
               ),
             ),
             const SizedBox(width: 12),
@@ -612,24 +368,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Total Bayar',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    _formatRupiah(widget.product.price * qty),
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  const Text('Total Bayar', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                  Text(_formatRupiah(widget.product.price * qty), style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.primary)),
                 ],
               ),
             ),
@@ -637,12 +377,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               onPressed: isOutOfStock ? null : () {
                 context.read<CartProvider>().addToCart(widget.product, qty: qty);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        '${widget.product.name} (x$qty) ditambahkan ke keranjang'),
-                    backgroundColor: AppColors.primary,
-                    duration: const Duration(seconds: 1),
-                  ),
+                  SnackBar(content: Text('${widget.product.name} (x$qty) ditambahkan ke keranjang'), backgroundColor: AppColors.primary, duration: const Duration(seconds: 1)),
                 );
                 Navigator.pop(context);
               },
@@ -652,14 +387,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 backgroundColor: isOutOfStock ? Colors.grey : AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                textStyle: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                textStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ),
           ],
