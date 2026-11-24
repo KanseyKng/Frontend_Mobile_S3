@@ -2,6 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// ✅ CONDITIONAL IMPORT
+import 'webview_platform_stub.dart'
+    if (dart.library.html) 'webview_platform_web.dart';
+
 import 'theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
@@ -9,11 +13,14 @@ import 'providers/wishlist_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/address_provider.dart';
 import 'providers/product_provider.dart';
-import 'providers/notification_provider.dart'; // ✅ IMPORT BARU
+import 'providers/notification_provider.dart';
 import 'screens/LoginScreen/login_screen.dart';
 import 'screens/HomeScreen/home_screen.dart';
 
 void main() {
+  // ✅ Panggil fungsi inisialisasi
+  initWebViewPlatform();
+  
   runApp(const MyApp());
 }
 
@@ -22,15 +29,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cartProvider = CartProvider();
+    final wishlistProvider = WishlistProvider();
+    final orderProvider = OrderProvider();
+    final notificationProvider = NotificationProvider();
+    final addressProvider = AddressProvider();
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => WishlistProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()),
-        ChangeNotifierProvider(create: (_) => AddressProvider()),
+        ChangeNotifierProvider.value(value: cartProvider),
+        ChangeNotifierProvider.value(value: wishlistProvider),
+        ChangeNotifierProvider.value(value: orderProvider),
+        ChangeNotifierProvider.value(value: notificationProvider),
+        ChangeNotifierProvider.value(value: addressProvider),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()), // ✅ DAFTARKAN DI SINI
+        
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(
+            cartProvider: cartProvider,
+            wishlistProvider: wishlistProvider,
+            orderProvider: orderProvider,
+            notificationProvider: notificationProvider,
+            addressProvider: addressProvider,
+          ),
+        ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -53,7 +75,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuth();
+    });
   }
 
   Future<void> _checkAuth() async {
