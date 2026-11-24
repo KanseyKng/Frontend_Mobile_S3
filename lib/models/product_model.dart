@@ -1,5 +1,4 @@
 // lib/models/product_model.dart
-import '../config/app_config.dart'; // ✅ Import config
 
 class ProductModel {
   final String id;
@@ -41,15 +40,8 @@ class ProductModel {
     );
   }
 
-  /// ✅ Ganti localhost/IP lama dengan AppConfig.baseUrl secara otomatis
-  String get fullImageUrl {
-    if (imageUrl.isEmpty) return '';
-    // Mengganti URL lama di database dengan BASE URL yang aktif saat ini
-    return imageUrl
-        .replaceAll('http://localhost:5000', AppConfig.baseUrl)
-        .replaceAll('http://192.168.1.129:5000', AppConfig.baseUrl)
-        .replaceAll('http://10.200.118.253:5000', AppConfig.baseUrl);
-  }
+  /// ✅ URL gambar sudah absolut dari Cloudinary
+  String get fullImageUrl => imageUrl;
 
   String get formattedPrice {
     final str = price.toString();
