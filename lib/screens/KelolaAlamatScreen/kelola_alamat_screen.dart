@@ -1,11 +1,15 @@
 // lib/screens/KelolaAlamatScreen/kelola_alamat_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http; // Untuk API Nominatim
 import '../../theme/app_theme.dart';
 import '../../providers/address_provider.dart';
 import '../../models/address_model.dart';
+import 'map_picker_screen.dart'; 
 
 class KelolaAlamatScreen extends StatefulWidget {
   final AddressModel? address;
@@ -30,6 +34,7 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
   int _selectedLabel = 0;
   bool _isPrimary = false;
   bool _isLoading = false;
+  bool _isGeocoding = false;
 
   final List<Map<String, dynamic>> _labelOptions = const [
     {'icon': Icons.home_rounded, 'label': 'Rumah'},
@@ -57,6 +62,8 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
       _selectedLatLng = LatLng(a.latitude, a.longitude);
       final idx = _labelOptions.indexWhere((e) => e['label'] == a.label);
       _selectedLabel = idx >= 0 ? idx : 0;
+    } else {
+      _getCurrentLocation(isInitial: true);
     }
   }
 
@@ -72,6 +79,172 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
     _postalCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _getCurrentLocation({bool isInitial = false}) async {
+    setState(() => _isGeocoding = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!isInitial && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Layanan lokasi tidak aktif')));
+        setState(() => _isGeocoding = false);
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!isInitial && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak')));
+          setState(() => _isGeocoding = false);
+          return;
+        }
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        if (!isInitial && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak permanen')));
+        setState(() => _isGeocoding = false);
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final newLatLng = LatLng(position.latitude, position.longitude);
+      
+      _mapController.move(newLatLng, 16.0);
+      setState(() => _selectedLatLng = newLatLng);
+      
+      await _reverseGeocode(newLatLng);
+      
+    } catch (e) {
+      if (!isInitial && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mendapatkan lokasi: $e')));
+      setState(() => _isGeocoding = false);
+    }
+  }
+
+  // FUNGSI BARU: Menggunakan Nominatim API dengan Fallback Berlapis
+  Future<void> _reverseGeocode(LatLng point) async {
+    setState(() => _isGeocoding = true);
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${point.latitude}&lon=${point.longitude}&accept-language=id',
+      );
+      
+      final response = await http.get(url, headers: {
+        'User-Agent': 'IkobanaApp/1.0 (com.example.app)',
+      });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final address = data['address'] ?? {};
+
+        setState(() {
+          // 1. JALAN & NO. RUMAH (Fallback Berlapis)
+          String? roadName;
+          if (address['road'] != null && address['road'].toString().isNotEmpty) {
+            roadName = address['road'];
+          } else if (address['pedestrian'] != null && address['pedestrian'].toString().isNotEmpty) {
+            roadName = address['pedestrian'];
+          } else if (address['residential'] != null && address['residential'].toString().isNotEmpty) {
+            roadName = address['residential'];
+          } else if (address['path'] != null && address['path'].toString().isNotEmpty) {
+            roadName = address['path'];
+          } else if (address['footway'] != null && address['footway'].toString().isNotEmpty) {
+            roadName = address['footway'];
+          }
+          
+          if (roadName != null) {
+            _streetCtrl.text = roadName;
+          } else {
+            // Jika benar-benar tidak ada nama jalan, isi dengan nama area
+            _streetCtrl.text = address['suburb'] ?? address['village'] ?? address['neighbourhood'] ?? '';
+          }
+
+          // 2. DESA / KELURAHAN
+          String? villageName;
+          if (address['village'] != null) {
+            villageName = address['village'];
+          } else if (address['suburb'] != null) {
+            villageName = address['suburb'];
+          } else if (address['neighbourhood'] != null) {
+            villageName = address['neighbourhood'];
+          } else if (address['hamlet'] != null) {
+            villageName = address['hamlet'];
+          }
+          if (villageName != null) _villageCtrl.text = villageName;
+
+          // 3. KECAMATAN
+          String? districtName;
+          if (address['city_district'] != null) {
+            districtName = address['city_district'];
+          } else if (address['district'] != null) {
+            districtName = address['district'];
+          } else if (address['subdistrict'] != null) {
+            districtName = address['subdistrict'];
+          } else if (address['municipality'] != null) {
+            districtName = address['municipality'];
+          }
+          if (districtName != null) _districtCtrl.text = districtName;
+
+          // 4. KOTA / KABUPATEN
+          String? cityName;
+          if (address['city'] != null) {
+            cityName = address['city'];
+          } else if (address['town'] != null) {
+            cityName = address['town'];
+          } else if (address['county'] != null) {
+            cityName = address['county'];
+          } else if (address['municipality'] != null) {
+            cityName = address['municipality'];
+          }
+          if (cityName != null) _cityCtrl.text = cityName;
+
+          // 5. PROVINSI
+          String? provinceName;
+          if (address['state'] != null) {
+            provinceName = address['state'];
+          } else if (address['region'] != null) {
+            provinceName = address['region'];
+          }
+          if (provinceName != null) _provinceCtrl.text = provinceName;
+
+          // 6. KODE POS
+          if (address['postcode'] != null) {
+            _postalCtrl.text = address['postcode'];
+          }
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Alamat berhasil diisi otomatis'), backgroundColor: Colors.green)
+          );
+        }
+      } else {
+        throw Exception('Gagal mengambil data alamat dari server');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengambil detail alamat: $e'), backgroundColor: Colors.red)
+        );
+      }
+    } finally {
+      setState(() => _isGeocoding = false);
+    }
+  }
+
+  Future<void> _openFullMap() async {
+    final result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(builder: (_) => MapPickerScreen(initialLocation: _selectedLatLng)),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedLatLng = result;
+        _mapController.move(result, 16.0);
+      });
+      await _reverseGeocode(result); 
+    }
   }
 
   Future<void> _saveAddress() async {
@@ -156,6 +329,26 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: const Color(0xFFDAE1FF).withValues(alpha: 0.4), borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.ac_unit, color: Color(0xFF0050CB), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Jaminan Suhu Beku -18°C Terjaga', style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0050CB))),
+                          Text('Titik presisi menentukan rute tercepat thermo-box kurir', style: TextStyle(fontFamily: 'Inter', fontSize: 11, color: Colors.grey.shade700)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               _buildMapSection(),
               const SizedBox(height: 16),
               _buildFormSection(),
@@ -174,47 +367,87 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
-              SizedBox(width: 4),
-              Text('Titik Lokasi', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B))),
+              const Icon(Icons.location_on_outlined, size: 18, color: AppColors.primary),
+              const SizedBox(width: 4),
+              const Text('Titik Lokasi', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B))),
+              const Spacer(),
+              if (_isGeocoding) const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
             ],
           ),
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              height: 200,
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _selectedLatLng,
-                  initialZoom: 15.0,
-                  onTap: (tapPosition, point) {
-                    setState(() => _selectedLatLng = point);
-                  },
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.app',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: _selectedLatLng,
-                        width: 40, height: 40,
-                        child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+          GestureDetector(
+            onTap: _openFullMap,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: 200,
+                child: Stack(
+                  children: [
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: _selectedLatLng,
+                        initialZoom: 16.0,
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.none,
+                        ),
                       ),
-                    ],
-                  ),
-                ],
+                      children: [
+                        TileLayer(
+                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.example.app',
+                        ),
+                      ],
+                    ),
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 30),
+                        child: Icon(Icons.location_pin, color: Colors.red, size: 40),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        child: const Center(
+                          child: Icon(Icons.zoom_in, color: Colors.white, size: 40),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: FloatingActionButton.small(
+                        heroTag: 'btnMyLocation',
+                        backgroundColor: Colors.white,
+                        onPressed: () => _getCurrentLocation(),
+                        child: const Icon(Icons.my_location, color: AppColors.primary),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(height: 8),
           Text('Koordinat: ${_selectedLatLng.latitude.toStringAsFixed(6)}, ${_selectedLatLng.longitude.toStringAsFixed(6)}', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: Color(0xFF424656))),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                _reverseGeocode(_selectedLatLng);
+              },
+              icon: const Icon(Icons.edit_location_alt, size: 16),
+              label: const Text('Gunakan Titik Ini', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
         ],
       ),
     );
