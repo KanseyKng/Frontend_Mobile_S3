@@ -6,6 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/wishlist_provider.dart';
 import '../../models/product_model.dart';
 import '../../widgets/cards/category_pill.dart';
 import '../../widgets/cards/product_card.dart';
@@ -16,6 +18,7 @@ import '../../widgets/sheets/address_bottom_sheet.dart';
 import '../ProductListScreen/product_list_screen.dart';
 import '../ProductDetailScreen/product_detail_screen.dart';
 import '../NotificationScreen/notification_screen.dart';
+import '../KelolaAlamatScreen/kelola_alamat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().fetchProducts();
       context.read<AddressProvider>().fetchAddresses();
+      context.read<WishlistProvider>().fetchWishlist();
+      context.read<NotificationProvider>().fetchNotifications();
+      context.read<OrderProvider>().fetchOrders();
     });
   }
 
@@ -66,6 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _goToAddAddress() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const KelolaAlamatScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,6 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onRefresh: () async {
                 await context.read<ProductProvider>().fetchProducts();
                 await context.read<AddressProvider>().fetchAddresses();
+                await context.read<WishlistProvider>().fetchWishlist();
+                await context.read<NotificationProvider>().fetchNotifications();
+                await context.read<OrderProvider>().fetchOrders();
               },
               child: CustomScrollView(
                 slivers: [
@@ -137,7 +150,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   Text(
-                    context.watch<AddressProvider>().displayAddress,
+                    context.watch<AddressProvider>().displayAddress.isEmpty 
+                        ? 'Pilih Alamat' 
+                        : context.watch<AddressProvider>().displayAddress,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                     style: const TextStyle(
@@ -214,8 +229,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAddressCard() {
     final addr = context.watch<AddressProvider>().currentAddress;
+    final bool isEmpty = addr.id.isEmpty || addr.recipientName.isEmpty;
+
     return GestureDetector(
-      onTap: _showAddressBottomSheet,
+      onTap: isEmpty ? _goToAddAddress : _showAddressBottomSheet,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -223,44 +240,66 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2, offset: const Offset(0, 1))],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: isEmpty 
+          ? Row(
               children: [
-                const Icon(Icons.location_on, color: AppColors.primary, size: 14),
-                const SizedBox(width: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: const Color(0xFF00682B).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999)),
-                  child: const Text('ALAMAT UTAMA', style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF00682B))),
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(color: const Color(0xFFD5E3FF).withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.add_location_alt, color: AppColors.primary, size: 20),
                 ),
-                const Spacer(),
-                const Icon(Icons.arrow_forward, color: Color(0xFF191C1E), size: 16),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text('${addr.recipientName} (${addr.phoneNumber})', style: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B))),
-            const SizedBox(height: 4),
-            Text(addr.fullAddress, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, color: Color(0xFF424656), height: 1.5)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: const Color(0xFFDAE1FF).withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
-                  child: Row(
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.home, size: 10, color: AppColors.primary),
-                      const SizedBox(width: 4),
-                      Text(addr.label, style: const TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                      Text('Belum ada alamat tersimpan', style: TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      SizedBox(height: 2),
+                      Text('Tambah alamat pengiriman sekarang', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
+                const Icon(Icons.chevron_right, color: AppColors.primary, size: 20),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: AppColors.primary, size: 14),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: const Color(0xFF00682B).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999)),
+                      child: const Text('ALAMAT UTAMA', style: TextStyle(fontFamily: 'Inter', fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF00682B))),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.arrow_forward, color: Color(0xFF191C1E), size: 16),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text('${addr.recipientName} (${addr.phoneNumber})', style: const TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B))),
+                const SizedBox(height: 4),
+                Text(addr.fullAddress, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, color: Color(0xFF424656), height: 1.5)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: const Color(0xFFDAE1FF).withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.home, size: 10, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Text(addr.label, style: const TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
       ),
     );
   }
