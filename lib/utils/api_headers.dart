@@ -4,8 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiHeaders {
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  /// Header standar untuk semua request ke backend (via Ngrok).
-  /// Menyertakan ngrok-skip-browser-warning agar tidak diblokir browser.
+  /// Header standar untuk semua request ke backend.
   static Future<Map<String, String>> get({bool withAuth = true}) async {
     String? token;
     if (withAuth) {
@@ -15,7 +14,8 @@ class ApiHeaders {
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'ngrok-skip-browser-warning': 'true',
+      // Header ngrok tidak masalah dikirim ke Railway, server akan mengabaikannya
+      'ngrok-skip-browser-warning': 'true', 
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
     };
   }
