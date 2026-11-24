@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
+import '../OrderListScreen/order_list_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -14,12 +15,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    // Tandai terbaca setelah 2 detik agar user sempat melihat titik biru
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        context.read<NotificationProvider>().markAllAsRead();
-      }
+    // ✅ Ambil data notifikasi dari API saat layar dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationProvider>().fetchNotifications();
     });
+  }
+
+  // ✅ Fungsi saat notifikasi diklik
+  void _handleNotificationTap(AppNotification notif) {
+    // Tandai sudah dibaca di database
+    context.read<NotificationProvider>().markAsRead(notif.id);
+
+    // Arahkan ke halaman Pesanan jika kategori Pesanan/Pengiriman
+    if (notif.category == 'Pesanan' || notif.category == 'Pengiriman') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const OrderListScreen()),
+      );
+    }
   }
 
   @override
@@ -36,7 +49,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF1C1B1B)),
           onPressed: () {
-            // ✅ Saat back ditekan, pastikan semua sudah dibaca
             context.read<NotificationProvider>().markAllAsRead();
             Navigator.pop(context);
           },
@@ -74,106 +86,109 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ],
         ),
       ),
-      body: notifications.isEmpty
-          ? const Center(child: Text('Belum ada notifikasi'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                return _buildNotificationCard(notifications[index]);
-              },
-            ),
+      body: notifProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : notifications.isEmpty
+              ? const Center(child: Text('Belum ada notifikasi'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: notifications.length,
+                  itemBuilder: (context, index) {
+                    return _buildNotificationCard(notifications[index]);
+                  },
+                ),
     );
   }
 
   Widget _buildNotificationCard(AppNotification notif) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: notif.isRead
-            ? Colors.white
-            : const Color(0xFFDAE1FF).withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: notif.iconBgColor,
-                  shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: () => _handleNotificationTap(notif),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: notif.isRead
+              ? Colors.white
+              : const Color(0xFFDAE1FF).withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: notif.iconBgColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(notif.icon, color: notif.iconColor, size: 20),
                 ),
-                child: Icon(notif.icon, color: notif.iconColor, size: 20),
-              ),
-              // ✅ Titik biru HANYA muncul jika belum dibaca
-              if (!notif.isRead)
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0050CB),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                if (!notif.isRead)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0050CB),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
                     ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notif.title,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1C1B1B),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  notif.description,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    height: 1.4,
-                    color: Color(0xFF424656),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // ✅ Teks aksi & panah sudah dihapus
-                Text(
-                  notif.time,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF727687),
-                  ),
-                ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    notif.title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1C1B1B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    notif.description,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      height: 1.4,
+                      color: Color(0xFF424656),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    notif.time,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF727687),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
