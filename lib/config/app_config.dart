@@ -8,7 +8,7 @@ class AppConfig {
   // static const String baseUrl = 'http://:5000';
 
   // OPSI 2: Ngrok (Untuk Presentasi - hapus // di bawah, dan beri // pada OPSI 1)
-   static const String baseUrl = 'https://uncurious-implosive-uninjured.ngrok-free.dev';
+   static const String baseUrl = 'https://backendmobilewebs3-production.up.railway.app';
 
   // ==========================================
   // JANGAN UBAH DI BAWAH INI
