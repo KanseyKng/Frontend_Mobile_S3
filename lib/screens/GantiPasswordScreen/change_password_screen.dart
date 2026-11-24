@@ -176,29 +176,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: const Color(0xFFEEF0FD), borderRadius: BorderRadius.circular(14)),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.lightbulb, color: Color(0xFF0267D2), size: 16),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Tips Password', style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF172033))),
-                                    SizedBox(height: 2),
-                                    Text('Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol untuk keamanan yang lebih baik.', style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF647084))),
-                                  ],
-                                ),
-                              ),
-                            ],
+                    // PERBAIKAN: Hapus Row yang membungkus Container Tips
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: const Color(0xFFEEF0FD), borderRadius: BorderRadius.circular(14)),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Icon(Icons.lightbulb, color: Color(0xFF0267D2), size: 16),
+                          SizedBox(width: 12),
+                          Expanded( // Expanded di sini aman karena di dalam Row
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Tips Password', style: TextStyle(fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF172033))),
+                                SizedBox(height: 2),
+                                Text('Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol untuk keamanan yang lebih baik.', style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF647084))),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text('Persyaratan Password Baru:', style: TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF172033))),
@@ -266,7 +264,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             children: [
               const Icon(Icons.lock_outline, color: Color(0xFF647084), size: 20),
               const SizedBox(width: 12),
-              Expanded(
+              Expanded( // Expanded di sini aman karena di dalam Row
                 child: TextField(
                   controller: controller, obscureText: obscureText,
                   style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF172033)),
