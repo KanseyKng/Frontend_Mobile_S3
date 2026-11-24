@@ -16,7 +16,6 @@ class AddressProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Getters untuk backward compatibility
   AddressModel get currentAddress => _selectedAddress ?? (_addresses.isNotEmpty
       ? _addresses.first
       : AddressModel(
@@ -92,5 +91,13 @@ class AddressProvider extends ChangeNotifier {
     } catch (e) {
       return e.toString();
     }
+  }
+
+  void clear() {
+    _addresses.clear();
+    _selectedAddress = null;
+    _error = null;
+    _isLoading = false;
+    notifyListeners();
   }
 }
