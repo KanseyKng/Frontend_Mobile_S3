@@ -74,19 +74,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
   }
 
   Widget _buildContent(WishlistProvider wishlist) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Info bar Jaminan Dingin
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                Icon(Icons.ac_unit, size: 13, color: Color(0xFF006C49)),
-                SizedBox(width: 6),
-                Text(
+                const Icon(Icons.ac_unit, size: 13, color: Color(0xFF006C49)),
+                const SizedBox(width: 6),
+                const Text(
                   'Jaminan Dingin -18°C Tetap Segar',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
@@ -98,26 +95,28 @@ class _WishlistScreenState extends State<WishlistScreen> {
               ],
             ),
           ),
-
-          // Grid Produk (Sesuai desain Figma baru)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+        ),
+        // ✅ Grid Produk disamakan dengan halaman Daftar Produk
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 180,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
               childAspectRatio: 0.62,
             ),
-            itemCount: wishlist.items.length,
-            itemBuilder: (context, index) {
-              final product = wishlist.items[index];
-              return _buildWishlistCard(product);
-            },
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final product = wishlist.items[index];
+                return _buildWishlistCard(product);
+              },
+              childCount: wishlist.items.length,
+            ),
           ),
-          const SizedBox(height: 24),
-        ],
-      ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+      ],
     );
   }
 
@@ -149,34 +148,62 @@ class _WishlistScreenState extends State<WishlistScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Gambar + Badge + Remove
+            // ✅ Gambar + Badge + Remove
             Stack(
               children: [
                 Container(
-                  height: 120,
+                  height: 110, // Disamakan dengan product_card
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF2F3FF),
+                    color: const Color(0xFFECEEF0),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.fastfood,
-                      size: 48, color: AppColors.textMuted),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    // ✅ PERBAIKAN: Tampilkan Gambar dari database
+                    child: product.fullImageUrl.isNotEmpty
+                        ? Image.network(
+                            product.fullImageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.fastfood,
+                                size: 48,
+                                color: AppColors.textMuted,
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              );
+                            },
+                          )
+                        : const Icon(
+                            Icons.fastfood,
+                            size: 48,
+                            color: AppColors.textMuted,
+                          ),
+                  ),
                 ),
                 // Badge BEKU
                 Positioned(
                   top: 6,
                   left: 6,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0267D2).withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.ac_unit,
-                            color: Colors.white, size: 9),
+                        Icon(Icons.ac_unit, color: Colors.white, size: 9),
                         SizedBox(width: 2),
                         Text(
                           'BEKU',
@@ -198,9 +225,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   right: 6,
                   child: GestureDetector(
                     onTap: () {
-                      context
-                          .read<WishlistProvider>()
-                          .removeFromWishlist(product.id);
+                      context.read<WishlistProvider>().removeFromWishlist(product.id);
                     },
                     child: Container(
                       width: 28,
@@ -209,8 +234,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                         color: Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.favorite,
-                          color: Color(0xFFA70519), size: 14),
+                      child: const Icon(Icons.favorite, color: Color(0xFFA70519), size: 14),
                     ),
                   ),
                 ),
@@ -221,8 +245,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
             // Rating
             Row(
               children: [
-                const Icon(Icons.star,
-                    color: Color(0xFFF59E0B), size: 11),
+                const Icon(Icons.star, color: Color(0xFFF59E0B), size: 11),
                 const SizedBox(width: 4),
                 Text(
                   product.rating.toString(),
@@ -244,24 +267,23 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
 
             // Nama
             Text(
               product.name,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF131B2E),
-                height: 1.25,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             
-            // ✅ Status Stok dari DB
+            // Status Stok
             Text(
               isOutOfStock ? 'Stok Habis' : 'Sisa Stok: ${product.stock}',
               style: TextStyle(
@@ -271,28 +293,22 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 color: isOutOfStock ? AppColors.error : AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 6),
 
-            // ✅ Harga (Gunakan formattedPrice karena tipe datanya int)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  product.formattedPrice, // <-- Diubah dari product.price
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.35,
-                    color: Color(0xFF131B2E),
-                  ),
-                ),
-              ],
-            ),
             const Spacer(), // Memastikan tombol selalu di bawah
 
-            // ✅ Add to Cart (Mati jika stok 0)
+            // Harga
+            Text(
+              product.formattedPrice,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF131B2E),
+              ),
+            ),
+            const SizedBox(height: 6),
+
+            // Tombol Add to Cart
             GestureDetector(
               onTap: isOutOfStock ? null : () {
                 context.read<CartProvider>().addToCart(product, qty: 1);
@@ -305,23 +321,21 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                height: 28, // Disamakan dengan product_card
                 decoration: BoxDecoration(
-                  // Tombol abu-abu jika stok habis
                   color: isOutOfStock ? Colors.grey.shade400 : const Color(0xFF004FA5),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6), // Disamakan dengan product_card
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add_shopping_cart,
-                        color: Colors.white, size: 12),
-                    SizedBox(width: 4),
+                    Icon(Icons.add, color: Colors.white, size: 10),
+                    SizedBox(width: 2),
                     Text(
-                      '+ Keranjang',
+                      'Tambah',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
@@ -341,8 +355,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.favorite_border,
-              size: 80, color: AppColors.textMuted),
+          Icon(Icons.favorite_border, size: 80, color: AppColors.textMuted),
           SizedBox(height: 16),
           Text(
             'Belum ada item yang disukai',
