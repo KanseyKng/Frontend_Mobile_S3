@@ -42,11 +42,14 @@ class _MidtransScreenState extends State<MidtransScreen> {
           },
           onPageFinished: (String url) {
             if (mounted) setState(() => _isLoading = false);
+            debugPrint('WebView URL: $url');
 
+            // ✅ PERBAIKAN: Deteksi URL finish yang lebih luas
             final isFinishUrl = url.contains('finish') ||
                 url.contains('success') ||
                 url.contains('status_code=200') ||
-                url.contains('/transactions/finish');
+                url.contains('/transactions/finish') ||
+                url.contains('midtrans.com/v2/');
 
             if (!_isSuccessHandled && isFinishUrl) {
               _handlePaymentSuccess();
@@ -77,8 +80,10 @@ class _MidtransScreenState extends State<MidtransScreen> {
     final notifProvider = context.read<NotificationProvider>();
 
     String? finalStatus;
-    // Diperpanjang menjadi 20 detik untuk mengantisipasi Railway Serverless "bangun"
-    for (int i = 0; i < 20; i++) {
+    
+    // ✅ PERBAIKAN: Polling diperpanjang menjadi 30 detik untuk e-wallet
+    // Shopeepay/QRIS butuh waktu lebih lama untuk webhook masuk
+    for (int i = 0; i < 30; i++) {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
       
@@ -92,7 +97,16 @@ class _MidtransScreenState extends State<MidtransScreen> {
         finalStatus = 'Dibatalkan';
         break;
       }
-      if (mounted) {
+      
+      // Jika sudah menunggu 20 detik tapi status belum berubah, 
+      // beri info tambahan ke pengguna
+      if (i >= 20 && status == 'Menunggu Pembayaran') {
+        if (mounted) {
+          setState(() {
+            _statusMessage = 'Pembayaran sedang diverifikasi... (${i + 1}s)';
+          });
+        }
+      } else if (mounted) {
         setState(() {
           _statusMessage = 'Menunggu konfirmasi server... (${i + 1}s)';
         });
@@ -115,6 +129,8 @@ class _MidtransScreenState extends State<MidtransScreen> {
     final isSuccess = finalStatus == 'Diproses';
     final isCancelled = finalStatus == 'Dibatalkan';
 
+    // ✅ PERBAIKAN: Jika timeout tapi status masih Menunggu Pembayaran, 
+    // beri tahu user untuk cek halaman pesanan (karena Shopeepay mungkin masih diproses)
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -131,7 +147,7 @@ class _MidtransScreenState extends State<MidtransScreen> {
               ? 'Terima kasih! Pesanan kamu sedang diproses.'
               : isCancelled
                   ? 'Pembayaran dibatalkan atau kedaluwarsa.'
-                  : 'Pembayaran kamu sedang diverifikasi oleh sistem. '
+                  : 'Pembayaran kamu sedang diverifikasi oleh sistem (Shopeepay/QRIS). '
                       'Silakan cek halaman pesanan beberapa saat lagi.',
         ),
         actions: [
@@ -151,7 +167,6 @@ class _MidtransScreenState extends State<MidtransScreen> {
     );
   }
 
-  // Fungsi pembantu untuk menampilkan dialog konfirmasi keluar
   void _showExitConfirmation() {
     showDialog(
       context: context,
@@ -179,10 +194,9 @@ class _MidtransScreenState extends State<MidtransScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // Mencegah aplikasi langsung tertutup saat tombol back ditekan
+      canPop: false,
       onPopInvoked: (didPop) {
         if (didPop) return;
-        // Jika pengguna menekan tombol back fisik, tampilkan konfirmasi
         _showExitConfirmation();
       },
       child: Scaffold(
