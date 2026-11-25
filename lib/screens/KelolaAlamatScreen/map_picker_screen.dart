@@ -38,7 +38,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             options: MapOptions(
               initialCenter: _selectedLocation,
               initialZoom: 16.0,
-              // Update titik setiap kali peta digeser
               onPositionChanged: (camera, hasGesture) {
                 if (hasGesture) {
                   setState(() {
@@ -50,18 +49,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.app',
+                // PERBAIKAN: Gunakan nama package aplikasi kamu yang sebenarnya.
+                // Jika nama package di build.gradle kamu berbeda, sesuaikan.
+                userAgentPackageName: 'com.example.tugas_pertama',
               ),
             ],
           ),
-          // Ikon Pin di Tengah Layar
           const Center(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 40), // Geser sedikit ke atas
+              padding: EdgeInsets.only(bottom: 40),
               child: Icon(Icons.location_pin, color: Colors.red, size: 50),
             ),
           ),
-          // Tombol Konfirmasi
           Positioned(
             bottom: 24,
             left: 16,
