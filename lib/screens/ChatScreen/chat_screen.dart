@@ -1,5 +1,6 @@
 // lib/screens/ChatScreen/chat_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart'; // ✅ Tambahan Import
 import '../../theme/app_theme.dart';
 import '../../services/chatbot_service.dart';
 
@@ -17,7 +18,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _isLoading = false;
 
-  // Data pesan
   final List<Map<String, dynamic>> _messages = [
     {
       'text': 'Halo Kak! 👋 Saya Ikobana Assistant. Ada yang bisa saya bantu hari ini? Mau tanya stok, tips penyimpanan, atau rekomendasi produk?',
@@ -62,7 +62,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
     _scrollToBottom();
 
-    // Panggil API
     final aiReply = await _chatbotService.sendMessage(text, _messages);
 
     if (mounted) {
@@ -217,15 +216,32 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ],
               ),
-              child: Text(
-                msg['text'] as String,
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  height: 1.5,
-                  color: isFromUser ? Colors.white : const Color(0xFF1E293B),
-                ),
-              ),
+              // ✅ PERBAIKAN: Menggunakan MarkdownBody untuk merapikan teks dari AI
+              child: isFromUser 
+                ? Text(
+                    msg['text'] as String,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      height: 1.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : MarkdownBody(
+                    data: msg['text'] as String,
+                    styleSheet: MarkdownStyleSheet(
+                      p: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        height: 1.5,
+                        color: Color(0xFF1E293B),
+                      ),
+                      strong: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0267D2), // Warna biru untuk teks tebal
+                      ),
+                    ),
+                  ),
             ),
           ),
           Padding(
