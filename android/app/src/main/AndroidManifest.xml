@@ -1,15 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     
-    <!-- IZIN INTERNET (Wajib untuk API) -->
     <uses-permission android:name="android.permission.INTERNET" />
-    
-    <!-- Izin Lokasi yang sudah ada -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     
     <application
-        android:label="Ikobana Frozen Foods"  <!-- ✅ PERBAIKAN: Nama Aplikasi -->
+        android:label="Ikobana Frozen Foods"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
