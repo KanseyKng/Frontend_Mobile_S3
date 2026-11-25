@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http; // Untuk API Nominatim
+import 'package:http/http.dart' as http;
 import '../../theme/app_theme.dart';
 import '../../providers/address_provider.dart';
 import '../../models/address_model.dart';
@@ -121,7 +121,6 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
     }
   }
 
-  // FUNGSI BARU: Menggunakan Nominatim API dengan Fallback Berlapis
   Future<void> _reverseGeocode(LatLng point) async {
     setState(() => _isGeocoding = true);
     try {
@@ -138,7 +137,6 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
         final address = data['address'] ?? {};
 
         setState(() {
-          // 1. JALAN & NO. RUMAH (Fallback Berlapis)
           String? roadName;
           if (address['road'] != null && address['road'].toString().isNotEmpty) {
             roadName = address['road'];
@@ -155,11 +153,9 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
           if (roadName != null) {
             _streetCtrl.text = roadName;
           } else {
-            // Jika benar-benar tidak ada nama jalan, isi dengan nama area
             _streetCtrl.text = address['suburb'] ?? address['village'] ?? address['neighbourhood'] ?? '';
           }
 
-          // 2. DESA / KELURAHAN
           String? villageName;
           if (address['village'] != null) {
             villageName = address['village'];
@@ -172,7 +168,6 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
           }
           if (villageName != null) _villageCtrl.text = villageName;
 
-          // 3. KECAMATAN
           String? districtName;
           if (address['city_district'] != null) {
             districtName = address['city_district'];
@@ -185,7 +180,6 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
           }
           if (districtName != null) _districtCtrl.text = districtName;
 
-          // 4. KOTA / KABUPATEN
           String? cityName;
           if (address['city'] != null) {
             cityName = address['city'];
@@ -198,7 +192,6 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
           }
           if (cityName != null) _cityCtrl.text = cityName;
 
-          // 5. PROVINSI
           String? provinceName;
           if (address['state'] != null) {
             provinceName = address['state'];
@@ -207,7 +200,6 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
           }
           if (provinceName != null) _provinceCtrl.text = provinceName;
 
-          // 6. KODE POS
           if (address['postcode'] != null) {
             _postalCtrl.text = address['postcode'];
           }
@@ -397,7 +389,8 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
                       children: [
                         TileLayer(
                           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.example.app',
+                          // PERBAIKAN: Ganti userAgentPackageName
+                          userAgentPackageName: 'com.example.tugas_pertama',
                         ),
                       ],
                     ),
@@ -462,31 +455,32 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
         children: [
           const Text('Detail Penerima', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B))),
           const SizedBox(height: 12),
-          _buildTextField(label: 'Nama Penerima', controller: _nameCtrl, hint: 'Nama lengkap'),
+          // PERBAIKAN: Menghapus parameter hint pada pemanggilan _buildTextField di bawah ini
+          _buildTextField(label: 'Nama Penerima', controller: _nameCtrl),
           const SizedBox(height: 12),
-          _buildTextField(label: 'Nomor WhatsApp / Seluler', controller: _phoneCtrl, hint: '812-3456-7890', keyboardType: TextInputType.phone),
+          _buildTextField(label: 'Nomor WhatsApp / Seluler', controller: _phoneCtrl, keyboardType: TextInputType.phone),
           const SizedBox(height: 12),
-          _buildTextField(label: 'Jalan & No. Rumah', controller: _streetCtrl, hint: 'Jl. Raya Darmo No. 25'),
+          _buildTextField(label: 'Jalan & No. Rumah', controller: _streetCtrl),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildTextField(label: 'Desa/Kelurahan', controller: _villageCtrl, hint: 'Wonokromo')),
+              Expanded(child: _buildTextField(label: 'Desa/Kelurahan', controller: _villageCtrl)),
               const SizedBox(width: 12),
-              Expanded(child: _buildTextField(label: 'Kecamatan', controller: _districtCtrl, hint: 'Wonokromo')),
+              Expanded(child: _buildTextField(label: 'Kecamatan', controller: _districtCtrl)),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildTextField(label: 'Kota/Kabupaten', controller: _cityCtrl, hint: 'Surabaya')),
+              Expanded(child: _buildTextField(label: 'Kota/Kabupaten', controller: _cityCtrl)),
               const SizedBox(width: 12),
-              Expanded(child: _buildTextField(label: 'Provinsi', controller: _provinceCtrl, hint: 'Jawa Timur')),
+              Expanded(child: _buildTextField(label: 'Provinsi', controller: _provinceCtrl)),
             ],
           ),
           const SizedBox(height: 12),
-          _buildTextField(label: 'Kode Pos', controller: _postalCtrl, hint: '60241', keyboardType: TextInputType.number),
+          _buildTextField(label: 'Kode Pos', controller: _postalCtrl, keyboardType: TextInputType.number),
           const SizedBox(height: 12),
-          _buildTextField(label: 'Catatan Khusus Kurir Rantai Dingin', controller: _notesCtrl, hint: 'Pagar hitam nomor 25, letakkan paket di cooler box depan teras', maxLines: 3),
+          _buildTextField(label: 'Catatan Khusus Kurir Rantai Dingin', controller: _notesCtrl, maxLines: 3),
           const SizedBox(height: 16),
           const Text('Label Alamat', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1C1B1B))),
           const SizedBox(height: 6),
@@ -528,7 +522,13 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
     );
   }
 
-  Widget _buildTextField({required String label, required TextEditingController controller, required String hint, TextInputType? keyboardType, int maxLines = 1}) {
+  // PERBAIKAN: Menghapus parameter 'hint' dari fungsi ini
+  Widget _buildTextField({
+    required String label, 
+    required TextEditingController controller, 
+    TextInputType? keyboardType, 
+    int maxLines = 1
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -540,7 +540,7 @@ class _KelolaAlamatScreenState extends State<KelolaAlamatScreen> {
           maxLines: maxLines,
           validator: (val) => val == null || val.isEmpty ? 'Wajib diisi' : null,
           decoration: InputDecoration(
-            hintText: hint,
+            // hintText DIHAPUS agar tidak ada teks contoh bawaan
             filled: true,
             fillColor: const Color(0xFFF6F3F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
