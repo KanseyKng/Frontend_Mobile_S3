@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../HomeScreen/home_screen.dart'; // ✅ IMPORT INI
+import '../HomeScreen/home_screen.dart'; 
 
 class MidtransScreen extends StatefulWidget {
   final String snapToken;
@@ -38,10 +38,10 @@ class _MidtransScreenState extends State<MidtransScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            setState(() => _isLoading = true);
+            if (mounted) setState(() => _isLoading = true);
           },
           onPageFinished: (String url) {
-            setState(() => _isLoading = false);
+            if (mounted) setState(() => _isLoading = false);
 
             final isFinishUrl = url.contains('finish') ||
                 url.contains('success') ||
@@ -77,8 +77,11 @@ class _MidtransScreenState extends State<MidtransScreen> {
     final notifProvider = context.read<NotificationProvider>();
 
     String? finalStatus;
-    for (int i = 0; i < 15; i++) {
+    // Diperpanjang menjadi 20 detik untuk mengantisipasi Railway Serverless "bangun"
+    for (int i = 0; i < 20; i++) {
       await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      
       final status = await orderProvider.pollStatus(widget.orderId);
       if (!mounted) return;
 
@@ -89,9 +92,11 @@ class _MidtransScreenState extends State<MidtransScreen> {
         finalStatus = 'Dibatalkan';
         break;
       }
-      setState(() {
-        _statusMessage = 'Menunggu konfirmasi server... (${i + 1}s)';
-      });
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'Menunggu konfirmasi server... (${i + 1}s)';
+        });
+      }
     }
 
     if (!mounted) return;
@@ -133,7 +138,6 @@ class _MidtransScreenState extends State<MidtransScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // ✅ PERBAIKAN: Kembali ke HomeScreen
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -147,73 +151,84 @@ class _MidtransScreenState extends State<MidtransScreen> {
     );
   }
 
+  // Fungsi pembantu untuk menampilkan dialog konfirmasi keluar
+  void _showExitConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Batalkan Pembayaran?'),
+        content: const Text(
+            'Pesanan kamu akan tetap tersimpan dengan status Menunggu Pembayaran.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Lanjutkan Bayar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pembayaran'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Batalkan Pembayaran?'),
-                content: const Text(
-                    'Pesanan kamu akan tetap tersimpan dengan status Menunggu Pembayaran.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Lanjutkan Bayar'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Keluar'),
-                  ),
-                ],
-              ),
-            );
-          },
+    return PopScope(
+      canPop: false, // Mencegah aplikasi langsung tertutup saat tombol back ditekan
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        // Jika pengguna menekan tombol back fisik, tampilkan konfirmasi
+        _showExitConfirmation();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Pembayaran'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _showExitConfirmation,
+          ),
         ),
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: _controller),
-          if (_isLoading && !_isWaitingWebhook)
-            const Center(child: CircularProgressIndicator()),
-          if (_isWaitingWebhook)
-            Container(
-              color: Colors.black54,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        _statusMessage,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+        body: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            if (_isLoading && !_isWaitingWebhook)
+              const Center(child: CircularProgressIndicator()),
+            if (_isWaitingWebhook)
+              Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          _statusMessage,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
